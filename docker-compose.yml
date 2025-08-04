@@ -1,0 +1,54 @@
+version: "3.8"
+services:
+  backend-flask:
+    environment:
+      # These URLs now point to localhost for local development
+      FRONTEND_URL: "http://localhost:3000"
+      BACKEND_URL: "http://localhost:4567"
+    build: ./backend-flask
+    ports:
+      - "4567:4567"
+    volumes:
+      - ./backend-flask:/backend-flask
+  db:
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - '5432:5432'
+    volumes: 
+      - db:/var/lib/postgresql/data
+
+  # ------ DynamoDB Local Service ------
+  dynamodb-local:
+    # We need user:root to get this working on some systems
+    user: root
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    volumes:
+      # This is a bind mount, linking a local folder to a container folder
+      - "./docker/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+  frontend-react-js:
+    environment:
+      # The React App (running in your browser) needs to know the backend's localhost address
+      REACT_APP_BACKEND_URL: "http://localhost:4567"
+    build: ./frontend-react-js
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-react-js:/frontend-react-js
+volumes:
+  # This defines a named volume called 'db' that Docker will manage
+  db:
+    driver: local
+# This network section is optional for local development but good practice
+networks: 
+  internal-network:
+    driver: bridge
+    name: webapp
