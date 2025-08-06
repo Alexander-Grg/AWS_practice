@@ -5,7 +5,7 @@ services:
       # These URLs now point to localhost for local development
       FRONTEND_URL: "http://localhost:3000"
       BACKEND_URL: "http://localhost:4567"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.honeycomb.io"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.eu1.honeycomb.io:443"
       OTEL_EXPORTER_OTLP_HEADERS: "x-honeycomb-team=${HONEYCOMB_API_KEY}"
       OTEL_SERVICE_NAME: "${HONEYCOMB_SERVICE_NAME}"
     build: ./backend-flask
