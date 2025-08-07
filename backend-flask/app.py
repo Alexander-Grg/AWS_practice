@@ -20,6 +20,14 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+# AWS XRAY -------------------
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+
+# Watchtower for logging to CloudWatch
+import watchtower
+import logging
+from time import strftime
 
 # Initialize OpenTelemetry
 provider = TracerProvider()
@@ -27,6 +35,19 @@ processor = BatchSpanProcessor(OTLPSpanExporter())
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
+
+# Initialize XRAY
+xray_url = os.getenv("AWS_XRAY_URL")
+xray_recorder.configure(service='Webapp', dynamic_naming=xray_url)
+# XRayMiddleware(app, xray_recorder)
+
+# Configuring Logger to Use CloudWatch
+# LOGGER = logging.getLogger(__name__)
+# LOGGER.setLevel(logging.DEBUG)
+# console_handler = logging.StreamHandler()
+# cw_handler = watchtower.CloudWatchLogHandler(log_group='webapp')
+# LOGGER.addHandler(console_handler)
+# LOGGER.addHandler(cw_handler)
 
 app = Flask(__name__)
 FlaskInstrumentor().instrument_app(app)
@@ -134,6 +155,12 @@ def data_activities_reply(activity_uuid):
   else:
     return model['data'], 200
   return
+
+@app.after_request
+def after_request(response):
+    timestamp = strftime('[%Y-%b-%d %H:%M]')
+    LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
+    return response
 
 if __name__ == "__main__":
   app.run(debug=True)
