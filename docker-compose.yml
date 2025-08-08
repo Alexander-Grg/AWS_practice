@@ -7,7 +7,7 @@ services:
       OTEL_SERVICE_NAME: 'backend-flask'
       OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.honeycomb.io"
       OTEL_EXPORTER_OTLP_HEADERS: "x-honeycomb-team=${HONEYCOMB_API_KEY}"
-      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION}"
+      AWS_DEFAULT_REGION: "ap-southeast-1"
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
       AWS_XRAY_URL: "*localhost:4567*"
@@ -22,7 +22,7 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_REGION: "us-east-1"
+      AWS_REGION: "ap-southeast-1"
     command:
       - "xray -o -b xray-daemon:2000"
     ports:
@@ -64,8 +64,3 @@ volumes:
   # This defines a named volume called 'db' that Docker will manage
   db:
     driver: local
-# This network section is optional for local development but good practice
-networks: 
-  internal-network:
-    driver: bridge
-    name: webapp

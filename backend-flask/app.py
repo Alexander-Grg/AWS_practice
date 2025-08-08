@@ -39,7 +39,6 @@ tracer = trace.get_tracer(__name__)
 # Initialize XRAY
 xray_url = os.getenv("AWS_XRAY_URL")
 xray_recorder.configure(service='Webapp', dynamic_naming=xray_url)
-# XRayMiddleware(app, xray_recorder)
 
 # Configuring Logger to Use CloudWatch
 # LOGGER = logging.getLogger(__name__)
@@ -50,6 +49,7 @@ xray_recorder.configure(service='Webapp', dynamic_naming=xray_url)
 # LOGGER.addHandler(cw_handler)
 
 app = Flask(__name__)
+XRayMiddleware(app, xray_recorder)
 FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 frontend = os.getenv('FRONTEND_URL')
@@ -159,7 +159,7 @@ def data_activities_reply(activity_uuid):
 @app.after_request
 def after_request(response):
     timestamp = strftime('[%Y-%b-%d %H:%M]')
-    LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
+    # LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
     return response
 
 if __name__ == "__main__":
