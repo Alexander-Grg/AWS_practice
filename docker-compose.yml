@@ -1,17 +1,7 @@
 services:
   backend-flask:
-    environment:
-      # These URLs now point to localhost for local development
-      FRONTEND_URL: "http://localhost:3000"
-      BACKEND_URL: "http://localhost:4567"
-      OTEL_SERVICE_NAME: 'backend-flask'
-      OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.honeycomb.io"
-      OTEL_EXPORTER_OTLP_HEADERS: "x-honeycomb-team=${HONEYCOMB_API_KEY}"
-      AWS_DEFAULT_REGION: "ap-southeast-1"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_XRAY_URL: "*localhost:4567*"
-      AWS_XRAY_DAEMON_ADDRESS: "xray-daemon:2000"
+    env_file:
+      - .env
     build: ./backend-flask
     ports:
       - "4567:4567"
@@ -19,10 +9,8 @@ services:
       - ./backend-flask:/backend-flask
   xray-daemon:
     image: "amazon/aws-xray-daemon"
-    environment:
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_REGION: "ap-southeast-1"
+    env_file:
+      - .env
     command:
       - "xray -o -b xray-daemon:2000"
     ports:
@@ -30,9 +18,8 @@ services:
   db:
     image: postgres:13-alpine
     restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+    env_file:
+      - .env
     ports:
       - '5432:5432'
     volumes: 
@@ -52,9 +39,8 @@ services:
       - "./docker/dynamodb:/home/dynamodblocal/data"
     working_dir: /home/dynamodblocal
   frontend-react-js:
-    environment:
-      # The React App (running in your browser) needs to know the backend's localhost address
-      REACT_APP_BACKEND_URL: "http://localhost:4567"
+    env_file:
+      - .env
     build: ./frontend-react-js
     ports:
       - "3000:3000"
