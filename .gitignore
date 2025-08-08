@@ -1,3 +1,7 @@
 docker/**/*
 .env
 *.env
+
+# Other ignores
+.venv/
+__pycache__/
