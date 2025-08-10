@@ -46,6 +46,7 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend-react-js:/frontend-react-js
+      - /frontend-react-js/node_modules
 volumes:
   # This defines a named volume called 'db' that Docker will manage
   db:
