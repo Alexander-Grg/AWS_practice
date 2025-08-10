@@ -6,7 +6,7 @@ tracer = trace.get_tracer("home_activities")
 
 class HomeActivities:
   @staticmethod
-  def run():
+  def run(cognito_user_id=None):
     # current_app.logger.info("Running HomeActivities service")
     with tracer.start_as_current_span("mock_data_home_activities"):
       now = datetime.now(timezone.utc).astimezone()
@@ -49,4 +49,15 @@ class HomeActivities:
         'replies': []
       }
       ]
+      if cognito_user_id != None:
+        extra_post = {
+          'uuid': '248959df-3079-4947-b847-9e0892d1bab4',
+          'handle':  'Lore',
+          'message': 'My dear brother, it the humans that are the problem',
+          'created_at': (now - timedelta(hours=1)).isoformat(),
+          'expires_at': (now + timedelta(hours=12)).isoformat(),
+          'likes': 1042,
+          'replies': []
+        }
+        results.insert(0,extra_post)
       return results
