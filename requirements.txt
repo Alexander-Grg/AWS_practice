@@ -12,3 +12,5 @@ aws-xray-sdk
 watchtower
 
 aws-amplify
+
+flask-AWSCognito
