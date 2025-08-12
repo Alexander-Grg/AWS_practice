@@ -20,7 +20,7 @@ export default function MessageGroupPage() {
 
   const loadMessageGroupsData = async () => {
     try {
-      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/message_groups`
+      const backend_url = `/api/message_groups`
       const res = await fetch(backend_url, {
         method: "GET"
       });
@@ -38,7 +38,7 @@ export default function MessageGroupPage() {
   const loadMessageGroupData = async () => {
     try {
       const handle = `@${params.handle}`;
-      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/messages/${handle}`
+      const backend_url = `/api/messages/${handle}`
       const res = await fetch(backend_url, {
         method: "GET"
       });
