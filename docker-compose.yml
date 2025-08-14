@@ -7,11 +7,6 @@ services:
       - "4567:4567"
     volumes:
       - ./backend-flask:/backend-flask
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4567/api/health-check"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
   xray-daemon:
     image: "amazon/aws-xray-daemon"
     env_file:
@@ -52,9 +47,6 @@ services:
     volumes:
       - ./frontend-react-js:/frontend-react-js
       - /frontend-react-js/node_modules
-    depends_on:
-      backend-flask:
-        condition: service_healthy
 volumes:
   # This defines a named volume called 'db' that Docker will manage
   db:
