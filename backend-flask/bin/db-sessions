@@ -1,0 +1,17 @@
+#! /bin/bash
+if [ "$1" = "prod" ]; then
+    CON_STRING="${PROD_CONNECTION_STRING}"
+  echo "Running in production mode"
+else
+    CON_STRING="${CONNECTION_STRING}"
+  echo "Running in development mode"
+fi
+
+NO_DB_URL=$(sed 's/\/webapp//g' <<<"$CON_STRING")
+psql $NO_DB_URL -c "select pid as process_id, \
+       usename as user,  \
+       datname as db, \
+       client_addr, \
+       application_name as app,\
+       state \
+from pg_stat_activity;"

@@ -1,0 +1,12 @@
+#! /bin/bash
+
+echo "Loading the database schema..."
+if [ "$1" = "prod" ]; then
+    CON_STRING="${PROD_CONNECTION_STRING}"
+  echo "Running in production mode"
+else
+    CON_STRING="${CONNECTION_STRING}"
+  echo "Running in development mode"
+fi
+schema_path=$(realpath .)/db/schema.sql
+psql $CON_STRING webapp < $schema_path
