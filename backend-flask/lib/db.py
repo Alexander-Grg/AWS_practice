@@ -17,5 +17,5 @@ def query_wrap_array(template):
   """
   return sql
 
-connection_url = os.getenv("CONNECTION_URL")
+connection_url = os.getenv("CONNECTION_STRING")
 pool = ConnectionPool(connection_url)
