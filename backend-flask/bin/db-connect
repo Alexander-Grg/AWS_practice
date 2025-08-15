@@ -1,3 +1,9 @@
 #! /bin/bash
 
-psql $CONNECTION_STRING
+if [$1 = "prod"]; then
+    CON_STRING="${PROD_CONNECTION_STRING}"
+    echo "Connecting to the production database..."
+else
+    CON_STRING="${CONNECTION_STRING}"
+    echo "Connecting to the development database..."
+fi
