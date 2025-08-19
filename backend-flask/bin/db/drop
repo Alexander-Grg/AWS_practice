@@ -1,0 +1,12 @@
+#! /bin/bash
+
+if [ "$1" == "prod" ]; then
+    CON_STRING="${PROD_CONNECTION_STRING}"
+    echo "Connecting to the production database..."
+else
+    CON_STRING="${CONNECTION_STRING}"
+    echo "Connecting to the development database..."
+fi
+echo "Dropping the database..."
+
+psql "${CON_STRING%/*}" -c "DROP DATABASE IF EXISTS webapp;"
