@@ -24,7 +24,7 @@ def lambda_handler(event, context):
       """
       print('SQL Statement ----')
       print(sql)
-      conn = psycopg2.connect(os.getenv('CONNECTION_URL'))
+      conn = psycopg2.connect(os.getenv('CONNECTION_STRING'))
       cur = conn.cursor()
       params = [
         user_display_name,
