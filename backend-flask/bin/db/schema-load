@@ -8,5 +8,5 @@ else
     CON_STRING="${CONNECTION_STRING}"
   echo "Running in development mode"
 fi
-schema_path=$(realpath .)/db/schema.sql
-psql $CON_STRING webapp < $schema_path
+schema_path=$(realpath .)/backend-flask/db/sql/activities/schema.sql
+psql $CON_STRING < $schema_path
