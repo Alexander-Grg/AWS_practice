@@ -9,4 +9,4 @@ else
 fi
 echo "Dropping the database..."
 
-psql $NO_DB_CONNECTION_URL -c "drop database IF EXISTS webapp;"
+psql "$CON_STRING" -c "drop database IF EXISTS webapp;"
