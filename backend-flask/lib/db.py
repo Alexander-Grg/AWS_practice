@@ -24,7 +24,7 @@ class Db:
     return template_content
 
   def init_pool(self):
-    connection_url = os.getenv("CONNECTION_STRING")
+    connection_url = os.getenv("CONNECTION_STRING_from_container")
     self.pool = ConnectionPool(connection_url)
   # we want to commit data such as an insert
   # be sure to check for RETURNING in all uppercases
