@@ -5,7 +5,7 @@ class NotificationsActivities:
     results = [{
       'uuid': '68f126b0-1ceb-4a33-88be-d90fa7109eee',
       'handle':  'coco',
-      'message': 'I am white unicorn',
+      'message': 'I am white unicorn1',
       'created_at': (now - timedelta(days=2)).isoformat(),
       'expires_at': (now + timedelta(days=5)).isoformat(),
       'likes_count': 5,

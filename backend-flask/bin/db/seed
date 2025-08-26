@@ -5,7 +5,7 @@ if [ "$1" == "prod" ]; then
     CON_STRING="${PROD_CONNECTION_STRING}"
   echo "Running in production mode"
 else
-    CON_STRING="${CONNECTION_STRING}"
+    CON_STRING="${CONNECTION_STRING_local_env}"
   echo "Running in development mode"
 fi
 seed_path=$(realpath .)/backend-flask/db/sql/activities/seed.sql

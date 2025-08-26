@@ -6,7 +6,7 @@ if [ "$1" == "prod" ]; then
     CON_STRING="${PROD_CONNECTION_STRING}"
     echo "Connecting to the production database..."
 else
-    CON_STRING="${CONNECTION_STRING}"
+    CON_STRING="${CONNECTION_STRING_local_env}"
     echo "Connecting to the development database..."
 fi
 psql "${CON_STRING%/*}" -c "CREATE DATABASE webapp;"
