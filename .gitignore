@@ -133,3 +133,5 @@ dist
 
 # Docker
 docker/**/*
+
+__pycache__/
