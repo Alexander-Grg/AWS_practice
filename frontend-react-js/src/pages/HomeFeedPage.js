@@ -18,7 +18,7 @@ export default function HomeFeedPage() {
 
   const loadData = async () => {
     try {
-      const backend_url = `/api/activities/home`
+      const backend_url = `${BACKEND_URL}/api/activities/home`
       const res = await fetch(backend_url, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("access_token")}`
