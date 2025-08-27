@@ -1,0 +1,33 @@
+{
+  "name": "Webapp Codespace - Script Setup",
+  "image": "mcr.microsoft.com/devcontainers/universal:2-linux",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "42Crunch.vscode-openapi",
+        "cweijan.vscode-postgresql-client2"
+      ]
+    }
+  },
+
+  "forwardPorts": [3000, 4567, 2000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend",
+      "onAutoForward": "openBrowser"
+    },
+    "4567": {
+      "label": "Backend"
+    },
+    "2000": {
+      "label": "XRay-Daemon"
+    }
+  },
+
+  "containerEnv": {
+    "AWS_CLI_AUTO_PROMPT": "on-partial"
+  },
+
+  "postCreateCommand": "bash ./.devcontainer/post-create.sh"
+}
