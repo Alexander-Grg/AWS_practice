@@ -3,7 +3,7 @@ if [ "$1" = "prod" ]; then
     CON_STRING="${PROD_CONNECTION_STRING}"
   echo "Running in production mode"
 else
-    CON_STRING="${CONNECTION_STRING_local_env}"
+    CON_STRING="${CONNECTION_STRING}"
   echo "Running in development mode"
 fi
 
