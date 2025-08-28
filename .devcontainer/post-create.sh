@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 echo "--- Starting Post-Create Setup ---"
 
 sudo apt-get update -y
@@ -13,7 +15,7 @@ rm -rf awscliv2.zip ./aws
 
 # Install PostgreSQL Client
 echo "--- Installing PostgreSQL client ---"
-sudo apt-get install -y postgresql-client-13 libpq-dev
+sudo apt-get install -y postgresql-client libpq-dev
 
 # Install Node.js and npm for React
 echo "--- Installing Node.js and frontend dependencies ---"
@@ -28,7 +30,7 @@ cd ..
 
 # Install Momento CLI (requires Homebrew)
 echo "--- Installing Momento CLI ---"
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/vscode/.bashrc
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 brew tap momentohq/tap

@@ -32,13 +32,31 @@ class CognitoJwtToken:
         self._load_jwk_keys()
 
 
+    # def _load_jwk_keys(self):
+    #     keys_url = f"https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json"
+    #     try:
+    #         response = self.request_client(keys_url)
+    #         self.jwk_keys = response.json()["keys"]
+    #     except requests.exceptions.RequestException as e:
+    #         raise FlaskAWSCognitoError(str(e)) from e
     def _load_jwk_keys(self):
         keys_url = f"https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}/.well-known/jwks.json"
         try:
-            response = self.request_client(keys_url)
-            self.jwk_keys = response.json()["keys"]
+            response = self.request_client(keys_url, timeout=5)
+            response.raise_for_status() 
+            
+            json_data = response.json()
+            if "keys" not in json_data:
+                raise FlaskAWSCognitoError("JWKS response does not contain 'keys'")
+
+            self.jwk_keys = json_data["keys"]
+
+        except requests.exceptions.HTTPError as e:
+            # For non-200 responses, print the content to see the AWS error
+            error_message = f"HTTP error fetching JWKS: {e}. Response: {response.text}"
+            raise FlaskAWSCognitoError(error_message) from e
         except requests.exceptions.RequestException as e:
-            raise FlaskAWSCognitoError(str(e)) from e
+            raise FlaskAWSCognitoError(f"Network error fetching JWKS: {e}") from e
 
     @staticmethod
     def _extract_headers(token):

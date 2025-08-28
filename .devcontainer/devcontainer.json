@@ -11,7 +11,7 @@
     }
   },
 
-  "forwardPorts": [3000, 4567, 2000],
+  "forwardPorts": [3000, 4567, 2000, 5432],
   "portsAttributes": {
     "3000": {
       "label": "Frontend",
@@ -22,6 +22,9 @@
     },
     "2000": {
       "label": "XRay-Daemon"
+    },
+    "5432": {
+      "label": "DB"
     }
   },
 
