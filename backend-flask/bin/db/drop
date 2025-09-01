@@ -1,12 +1,8 @@
-#! /bin/bash
+#!/usr/bin/bash
 
-if [ "$1" == "prod" ]; then
-    CON_STRING="${PROD_CONNECTION_STRING}"
-    echo "Connecting to the production database..."
-else
-    CON_STRING="${CONNECTION_STRING}"
-    echo "Connecting to the development database..."
-fi
-echo "Dropping the database..."
+CYAN='\033[1;36m'
+NO_COLOR='\033[0m'
+LABEL="db-drop"
+printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
 
-psql "$CON_STRING" -c "drop database IF EXISTS webapp;"
+docker-compose exec -T db dropdb --username "$PG_DATABASE" --if-exists webapp

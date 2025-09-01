@@ -21,7 +21,7 @@ class CreateReply:
     if model['errors']:
       # return what we provided
       model['data'] = {
-        'display_name': 'Alexander Brown',
+        'display_name': 'Alex Grg',
         'handle':  user_sender_handle,
         'message': message,
         'reply_to_activity_uuid': activity_uuid
@@ -30,7 +30,7 @@ class CreateReply:
       now = datetime.now(timezone.utc).astimezone()
       model['data'] = {
         'uuid': uuid.uuid4(),
-        'display_name': 'Alexander Brown',
+        'display_name': 'Alex Grg',
         'handle':  user_handle,
         'message': message,
         'created_at': now.isoformat(),

@@ -1,12 +1,11 @@
-#! /bin/bash
+#!/usr/bin/bash
 
-echo "Loading the database schema..."
-if [ "$1" = "prod" ]; then
-    CON_STRING="${PROD_CONNECTION_STRING}"
-  echo "Running in production mode"
-else
-    CON_STRING="${CONNECTION_STRING}"
-  echo "Running in development mode"
-fi
-schema_path=$(realpath .)/backend-flask/db/sql/activities/schema.sql
-psql $CON_STRING < $schema_path
+CYAN='\033[1;36m'
+NO_COLOR='\033[0m'
+LABEL="db-schema-load"
+printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
+
+schema_path="backend-flask/db/sql/schema.sql"
+echo "Loading schema from: ${schema_path}"
+
+cat $schema_path | docker-compose exec -T db psql --username "$PG_DATABASE" --dbname "$PG_DATABASE"

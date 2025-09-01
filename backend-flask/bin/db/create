@@ -1,12 +1,8 @@
-#! /bin/bash
+#!/usr/bin/bash
 
-echo "Creating the database..."
+CYAN='\033[1;36m'
+NO_COLOR='\033[0m'
+LABEL="db-create"
+printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
 
-if [ "$1" == "prod" ]; then
-    CON_STRING="${PROD_CONNECTION_STRING}"
-    echo "Connecting to the production database..."
-else
-    CON_STRING="${CONNECTION_STRING}"
-    echo "Connecting to the development database..."
-fi
-psql "${CON_STRING%/*}" -c "CREATE DATABASE webapp;"
+docker-compose exec -T db createdb --username "$PG_DATABASE" --owner "$PG_DATABASE" webapp

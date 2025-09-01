@@ -32,7 +32,7 @@ class CreateMessage:
     if model['errors']:
       # return what we provided
       model['data'] = {
-        'display_name': 'Alexander Brown',
+        'display_name': 'Alex Grg',
         'handle':  user_sender_handle,
         'message': message
       }

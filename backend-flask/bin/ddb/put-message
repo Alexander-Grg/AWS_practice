@@ -31,7 +31,7 @@ def create_message(client,message_group_uuid, created_at, message, sender_uuid, 
   # print the response
   print(response)
 
-def brown_message(client,timestamp,message):
+def grg_message(client,timestamp,message):
   sender_uuid = "2aa1c49c-669a-47b0-9177-37efe9e420c4"
   message_group_uuid = "5ae290ed-55d1-47a0-bc6d-fe2bc2700399"
 
@@ -41,8 +41,8 @@ def brown_message(client,timestamp,message):
     created_at=timestamp,
     message=message,
     sender_uuid=sender_uuid,
-    sender_display_name='Alexander Brown',
-    sender_handle='brown'
+    sender_display_name='Alex Grg',
+    sender_handle='alexgrg'
   )
 
 def grigoryev_message(client,timestamp,message):
@@ -173,6 +173,6 @@ lines = conversation.split('\n')
 
 for i in range(len(lines)):
   if lines[i].startswith('Person 1: '):
-    brown_message(dynamodb,(now + timedelta(minutes=i)).isoformat(),lines[i].replace('Person 1: ', ''))
+    grg_message(dynamodb,(now + timedelta(minutes=i)).isoformat(),lines[i].replace('Person 1: ', ''))
   elif lines[i].startswith('Person 2: '):
     grigoryev_message(dynamodb,(now + timedelta(minutes=i)).isoformat(),lines[i].replace('Person 2: ', ''))

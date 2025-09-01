@@ -2,21 +2,16 @@
 
 import boto3
 import os
-import sys
+from lib.db import db
 
 print("== db-update-cognito-user-ids")
-
-current_path = os.path.dirname(os.path.abspath(__file__))
-parent_path = os.path.abspath(os.path.join(current_path, '..', '..'))
-sys.path.append(parent_path)
-from lib.db import db
 
 def update_users_with_cognito_user_id(handle,sub):
   sql = """
     UPDATE public.users
     SET cognito_user_id = %(sub)s
     WHERE
-      users.handle = %(handle)s;
+      LOWER(users.handle) = LOWER(%(handle)s);
   """
   db.query_commit(sql,{
     'handle' : handle,
@@ -40,9 +35,9 @@ def get_cognito_user_ids():
     attrs = user['Attributes']
     sub    = next((a for a in attrs if a["Name"] == 'sub'), None)
     handle = next((a for a in attrs if a["Name"] == 'preferred_username'), None)
-    dict_users[handle['Value']] = sub['Value']
+    if handle and sub: # Add check to ensure both values exist
+      dict_users[handle['Value']] = sub['Value']
   return dict_users
-
 
 users = get_cognito_user_ids()
 

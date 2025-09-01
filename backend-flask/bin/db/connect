@@ -1,11 +1,4 @@
-#! /bin/bash
+# #! /usr/bin/bash
+SCHEMA_FILE="./backend-flask/db/sql/schema.sql"
 
-if [ "$1" == "prod" ]; then
-    CON_STRING="${PROD_CONNECTION_STRING}"
-    echo "Connecting to the production database..."
-else
-    CON_STRING="${CONNECTION_STRING}"
-    echo "Connecting to the development database..."
-fi
-
-psql "$CON_STRING"
+cat $SCHEMA_FILE | docker-compose exec -T db psql --username webapp --dbname webapp
