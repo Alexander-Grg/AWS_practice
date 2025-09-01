@@ -21,7 +21,7 @@ export default function UserFeedPage() {
 
   const loadData = async () => {
     try {
-      const backend_url = `${BACKEND_URL}/api/activities/${title}`
+      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/${title}`
       const res = await fetch(backend_url, {
         method: "GET"
       });
