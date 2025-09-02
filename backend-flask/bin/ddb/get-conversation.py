@@ -3,7 +3,7 @@
 import boto3
 import sys
 import json
-import datetime
+from datetime import datetime
 
 attrs = {
   'endpoint_url': 'http://localhost:8000'
