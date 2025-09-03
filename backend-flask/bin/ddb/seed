@@ -1,4 +1,0 @@
-#!/bin/bash
-set -e
-
-docker-compose exec backend-flask python3 -m bin.ddb.seed.py

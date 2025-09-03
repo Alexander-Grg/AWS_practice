@@ -1,23 +1,21 @@
 #!/bin/bash
-# This script will exit immediately if any command fails.
 set -e
 
+echo "==== db-setup"
 bin_path="backend-flask/bin"
 
-# --- Main Setup Logic ---
-
-echo "Stopping backend-flask to release DB connections..."
+# Stop the backend container to release database connections
+echo "Stopping backend-flask..."
 docker-compose stop backend-flask
 
+# Run the database scripts
 "$bin_path/db/drop"
 "$bin_path/db/create"
 "$bin_path/db/schema-load"
 "$bin_path/db/seed"
 
-echo "Starting backend-flask service..."
+# Restart the backend container
+echo "Starting backend-flask..."
 docker-compose up -d backend-flask
-
-echo "Updating Cognito User IDs in the database..."
-"$bin_path/db/update_cognito_user_ids"
 
 echo "Setup complete."

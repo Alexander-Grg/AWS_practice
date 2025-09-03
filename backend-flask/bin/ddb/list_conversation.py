@@ -13,7 +13,7 @@ sys.path.append(parent_path)
 from lib.db import db
 
 attrs = {
-  'endpoint_url': 'http://localhost:8000'
+  'endpoint_url': os.getenv("AWS_ENDPOINT_URL")
 }
 
 if len(sys.argv) == 2:

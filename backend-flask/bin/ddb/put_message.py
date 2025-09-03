@@ -3,9 +3,10 @@
 import boto3
 import sys
 from datetime import datetime, timedelta, timezone
+import os
 
 attrs = {
-  'endpoint_url': 'http://localhost:8000'
+  'endpoint_url': os.getenv("AWS_ENDPOINT_URL")
 }
 
 if len(sys.argv) == 2:
