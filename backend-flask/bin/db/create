@@ -1,8 +1,16 @@
-#!/usr/bin/bash
+#!/bin/bash
+set -e
 
-CYAN='\033[1;36m'
-NO_COLOR='\033[0m'
-LABEL="db-create"
-printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
+if [ "$1" == "prod" ]; then
+    CON_STRING="${PROD_CONNECTION_STRING}"
+else
+    CON_STRING="${CONNECTION_STRING}"
+fi
 
-docker-compose exec -T db createdb --username "$PG_DATABASE" --owner "$PG_DATABASE" webapp
+# Replace the internal hostname 'db' with 'localhost' for host access
+CON_STRING="${CON_STRING/@db/@localhost}"
+
+echo "Creating the database..."
+
+# Connect to the 'postgres' database to create 'webapp'
+psql "${CON_STRING%/*}/postgres" -c "CREATE DATABASE webapp;"

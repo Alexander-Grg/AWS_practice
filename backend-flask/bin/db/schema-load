@@ -1,11 +1,20 @@
-#!/usr/bin/bash
+#! /usr/bin/bash
 
 CYAN='\033[1;36m'
 NO_COLOR='\033[0m'
 LABEL="db-schema-load"
 printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
 
-schema_path="backend-flask/db/sql/schema.sql"
-echo "Loading schema from: ${schema_path}"
+schema_path="$(realpath .)/backend-flask/db/sql/schema.sql"
+echo $schema_path
 
-cat $schema_path | docker-compose exec -T db psql --username "$PG_DATABASE" --dbname "$PG_DATABASE"
+if [ "$1" = "prod" ]; then
+  echo "Running in production mode"
+  URL=$PROD_CONNECTION_URL
+else
+  URL=$CONNECTION_STRING
+fi
+
+URL="${URL/@db/@localhost}"
+
+psql "$URL" webapp < "$schema_path"

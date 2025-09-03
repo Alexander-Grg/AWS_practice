@@ -1,4 +1,15 @@
-# #! /usr/bin/bash
-SCHEMA_FILE="./backend-flask/db/sql/schema.sql"
+#! /usr/bin/bash
 
-cat $SCHEMA_FILE | docker-compose exec -T db psql --username webapp --dbname webapp
+# Select the connection string based on the environment argument
+if [ "$1" = "prod" ]; then
+  echo "Running in production mode"
+  URL=$PROD_CONNECTION_STRING
+else
+  URL=$CONNECTION_STRING
+fi
+
+# Replace the internal hostname 'db' with 'localhost' for host access
+URL_FOR_HOST=$(echo "$URL" | sed 's/@db/@localhost/g')
+
+# Connect to the database using the modified URL
+psql "$URL_FOR_HOST"

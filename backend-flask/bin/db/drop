@@ -1,8 +1,17 @@
-#!/usr/bin/bash
+#! /bin/bash
 
-CYAN='\033[1;36m'
-NO_COLOR='\033[0m'
-LABEL="db-drop"
-printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
+if [ "$1" == "prod" ]; then
+    CON_STRING="${PROD_CONNECTION_STRING}"
+    echo "Connecting to the production database..."
+else
+    CON_STRING="${CONNECTION_STRING}"
+    echo "Connecting to the development database..."
+fi
 
-docker-compose exec -T db dropdb --username "$PG_DATABASE" --if-exists webapp
+# Replace the internal hostname 'db' with 'localhost' for host access
+CON_STRING="${CON_STRING/@db/@localhost}"
+
+echo "Dropping the database..."
+
+# Append '/postgres' to connect to the maintenance database before dropping 'webapp'
+psql "${CON_STRING%/*}/postgres" -c "DROP DATABASE IF EXISTS webapp;"

@@ -1,4 +1,0 @@
-#!/bin/bash
-set -e
-
-docker-compose exec backend-flask python3 -m bin.db.update_cognito_user_ids

@@ -15,7 +15,7 @@ from lib.db import db
 
 
 attrs = {
-  'endpoint_url': 'http://dynamodb-local:8000'
+  'endpoint_url': os.getenv("AWS_ENDPOINT_URL")
 }
 # unset endpoint url for use with production database
 if len(sys.argv) == 2:
