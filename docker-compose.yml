@@ -10,7 +10,7 @@ services:
       AWS_COGNITO_USER_POOL_CLIENT_ID: "${AWS_COGNITO_USER_POOL_CLIENT_ID}"
 
       # Activate this variable only for local testing purposes. Remove otherwise.
-      # AWS_ENDPOINT_URL: "${AWS_ENDPOINT_URL}"
+      AWS_ENDPOINT_URL: "${AWS_ENDPOINT_URL}"
 
       CONNECTION_STRING: "${CONNECTION_STRING}"
       PROD_CONNECTION_STRING: "${PROD_CONNECTION_STRING}"

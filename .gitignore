@@ -29,3 +29,7 @@ package-lock.json
 
 # DynamoDB Local files
 .dynamodb/
+
+# Tooling / Installers
+aws/
+awscliv2.zip
