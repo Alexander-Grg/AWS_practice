@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 
 from lib.db import db
 from lib.ddb import Ddb
-from lib.momento import MomentoCounter
 
 class CreateMessage:
   # mode indicates if we want to create a new message_group or using an existing one
@@ -72,6 +71,7 @@ class CreateMessage:
       elif (mode == "create"):
         data = Ddb.create_message_group(
           client=ddb,
+          message=message,
           my_user_uuid=my_user['uuid'],
           my_user_display_name=my_user['display_name'],
           my_user_handle=my_user['handle'],
@@ -79,6 +79,5 @@ class CreateMessage:
           other_user_display_name=other_user['display_name'],
           other_user_handle=other_user['handle']
         )
-      #MomentoCounter.incr(f"msgs/{user_handle}")
       model['data'] = data
     return model
