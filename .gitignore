@@ -5,6 +5,9 @@ __pycache__/
 *.pyo
 *.pyd
 
+# Local database files
+shared-local-instance.db
+
 # Node.js
 node_modules/
 .npm/
