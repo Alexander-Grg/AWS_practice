@@ -54,7 +54,8 @@ class Ddb:
       'ScanIndexForward': False,
       'Limit': 20,
       'ExpressionAttributeValues': {
-        ':pkey': {'S': f"MSG#{message_group_uuid}"}
+        ':year': {'S': year },
+        ':pk': {'S': f"MSG#{message_group_uuid}"}
       }
     }
 
