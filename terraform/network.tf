@@ -84,3 +84,13 @@ resource "aws_route_table_association" "subnet_2c" {
   route_table_id = aws_route_table.main.id
 }
 
+# Create DB Subnet Group
+resource "aws_db_subnet_group" "cruddur_db_subnet_group" {
+  name       = "cruddur-db-subnet-group"
+  subnet_ids = [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id]
+
+  tags = {
+    Name        = "cruddur-db-subnet-group"
+    Environment = "development"
+  }
+}
