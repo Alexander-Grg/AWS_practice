@@ -142,7 +142,7 @@ output "post_srv_sg_id" {
 # IAM Role for webapp-post-confirmation2 Lambda Function
 resource "aws_iam_role" "webapp_post_confirmation_role" {
   name = "webapp-post-confirmation2-role"
-  
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -210,7 +210,7 @@ resource "aws_iam_role" "messaging_stream_lambda_role" {
   tags = {
     Name        = "${var.function_name_webapp_messaging_stream}-role"
     Environment = var.environment
-  } 
+  }
 }
 
 # IAM Role for Lambda function
@@ -234,4 +234,49 @@ resource "aws_iam_role" "post_confirmation_lambda_role" {
     Name        = "${var.function_name_lambda_post_confirmation}-role"
     Environment = var.environment
   }
+}
+
+# IAM Policy for DynamoDB access
+resource "aws_iam_policy" "lambda_dynamodb_policy" {
+  name        = "${var.function_name_webapp_messaging_stream}-dynamodb-policy"
+  description = "Policy for Lambda to access DynamoDB"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:Query",
+          "dynamodb:GetItem",
+          "dynamodb:DescribeStream",
+          "dynamodb:GetRecords",
+          "dynamodb:GetShardIterator",
+          "dynamodb:ListStreams"
+        ]
+        Resource = [
+          "arn:aws:dynamodb:${data.dotenv.main.env["AWS_DEFAULT_REGION"]}:${data.dotenv.main.env["AWS_ACCESS_KEY_ID"]}:table/${var.dynamodb_table_name}",
+          "arn:aws:dynamodb:${data.dotenv.main.env["AWS_DEFAULT_REGION"]}:${data.dotenv.main.env["AWS_ACCESS_KEY_ID"]}:table/${var.dynamodb_table_name}/stream/*"
+        ]
+      }
+    ]
+  })
+}
+
+# Attach DynamoDB policy to Lambda role
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb_policy_attachment" {
+  role       = aws_iam_role.messaging_stream_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
+}
+
+# Attach AWS managed policy for basic Lambda execution
+resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+  role       = aws_iam_role.messaging_stream_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# Attach AWS managed policy for VPC access
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.messaging_stream_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }

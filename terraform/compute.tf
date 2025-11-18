@@ -1,6 +1,6 @@
 # Create Lambda function source code
-resource "local_file_lambda_post_confirmation" "lambda_source" {
-  content = <<EOF
+resource "local_file" "lambda_post_confirmation_source" {
+  content  = <<EOF
 import json
 import psycopg2
 import os
@@ -52,14 +52,8 @@ EOF
 
 # Attach EC2 policy to Lambda role
 resource "aws_iam_role_policy_attachment" "lambda_ec2_policy_attachment" {
-  role       = aws_iam_role.lambda_role.name
+  role       = aws_iam_role.post_confirmation_lambda_role.name
   policy_arn = aws_iam_policy.lambda_ec2_policy.arn
-}
-
-# Attach AWS managed policy for VPC access
-resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 # CloudWatch Log Group
@@ -75,20 +69,20 @@ resource "aws_cloudwatch_log_group" "lambda_post_confirmation_logs" {
 
 # Lambda function
 resource "aws_lambda_function" "webapp_post_confirmation" {
-  filename         = data.archive_file.lambda_zip.output_path
-  function_name    = var.function_name_lambda_post_confirmation
-  role            = aws_iam_role.webapp_post_confirmation_role.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.9"
-  timeout         = 3
-  memory_size     = 128
-  architectures   = ["x86_64"]
-  package_type    = "Zip"
-  layers          = [var.psycopg2_layer_arn]
+  filename      = data.archive_file.lambda_post_confirmation_lambda_zip.output_path
+  function_name = var.function_name_lambda_post_confirmation
+  role          = aws_iam_role.webapp_post_confirmation_role.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.9"
+  timeout       = 3
+  memory_size   = 128
+  architectures = ["x86_64"]
+  package_type  = "Zip"
+  layers        = [var.psycopg2_layer_arn]
 
   vpc_config {
-    subnet_ids         = data.aws_subnets.default.ids
-    security_group_ids = [data.aws_security_group.default.id]
+    subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
+    security_group_ids = [aws_security_group.default_sg.vpc_id]
   }
 
   environment {
@@ -114,7 +108,7 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
     aws_iam_role_policy_attachment.lambda_vpc_access,
     aws_iam_role_policy_attachment.lambda_ec2_policy_attachment,
     aws_cloudwatch_log_group.lambda_post_confirmation_logs,
-    data.archive_file.lambda_zip
+    data.archive_file.lambda_post_confirmation_lambda_zip
   ]
 
   tags = {
@@ -152,52 +146,9 @@ output "lpost_confirmation_lambda_log_group_name" {
   value       = aws_cloudwatch_log_group.lambda_post_confirmation_logs.name
 }
 
-
-# Variables for customization
-# variable "function_name" {
-#   description = "Name of the Lambda function"
-#   type        = string
-#   default     = "webapp-messaging-stream"
-# }
-
-# variable "environment" {
-#   description = "Environment name (e.g., dev, staging, prod)"
-#   type        = string
-#   default     = "dev"
-# }
-
-# variable "dynamodb_table_name" {
-#   description = "Name of the DynamoDB table"
-#   type        = string
-#   default     = "webapp-messages"
-# }
-
-# # Data sources
-# data "aws_caller_identity" "current" {}
-# data "aws_region" "current" {}
-
-# # Get default VPC
-# data "aws_vpc" "default" {
-#   default = true
-# }
-
-# # Get default subnets
-# data "aws_subnets" "default" {
-#   filter {
-#     name   = "vpc-id"
-#     values = [data.aws_vpc.default.id]
-#   }
-# }
-
-# # Get default security group
-# data "aws_security_group" "default" {
-#   name   = "default"
-#   vpc_id = data.aws_vpc.default.id
-# }
-
 # Create Lambda function source code
-resource "local_file_webapp_messaging_stream" "lambda_source" {
-  content = <<EOF
+resource "local_file" "webapp_messaging_stream_source" {
+  content  = <<EOF
 import json
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -225,18 +176,6 @@ EOF
   filename = "${path.module}/lambda_function.py"
 }
 
-# Attach DynamoDB policy to Lambda role
-resource "aws_iam_role_policy_attachment" "lambda_dynamodb_policy_attachment" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
-}
-
-# Attach AWS managed policy for basic Lambda execution
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "webapp_messaging_stream_logs" {
   name              = "/aws/lambda/${var.function_name_webapp_messaging_stream}"
@@ -250,19 +189,19 @@ resource "aws_cloudwatch_log_group" "webapp_messaging_stream_logs" {
 
 # Lambda function
 resource "aws_lambda_function" "webapp_messaging_stream" {
-  filename         = data.archive_file.lambda_zip.output_path
-  function_name    = var.function_name_webapp_messaging_stream
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.13"
-  timeout         = 3
-  memory_size     = 128
-  architectures   = ["x86_64"]
-  package_type    = "Zip"
+  filename      = data.archive_file.webapp_messaging_stream_lambda_zip.output_path
+  function_name = var.function_name_webapp_messaging_stream
+  role          = aws_iam_role.messaging_stream_lambda_role.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.12"
+  timeout       = 3
+  memory_size   = 128
+  architectures = ["x86_64"]
+  package_type  = "Zip"
 
   vpc_config {
-    subnet_ids         = data.aws_subnets.default.ids
-    security_group_ids = [data.aws_security_group.default.id]
+    subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
+    security_group_ids = [aws_security_group.default_sg.vpc_id]
   }
 
   ephemeral_storage {
@@ -283,7 +222,7 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
     aws_iam_role_policy_attachment.lambda_vpc_access,
     aws_iam_role_policy_attachment.lambda_dynamodb_policy_attachment,
     aws_cloudwatch_log_group.webapp_messaging_stream_logs,
-    data.archive_file.lambda_zip
+    data.archive_file.webapp_messaging_stream_lambda_zip
   ]
 
   tags = {

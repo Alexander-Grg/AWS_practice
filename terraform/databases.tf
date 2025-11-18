@@ -5,58 +5,57 @@ resource "aws_db_instance" "webapp_rds_instance" {
   engine         = "postgres"
   engine_version = "17.6"
   instance_class = "db.t3.micro"
-  
+
   # Database Configuration
   db_name  = "webapp"
   username = "root"
   password = data.dotenv.main.env["PG_PASSWORD"]
   port     = 5432
-  
+
   # Storage Configuration
-  allocated_storage     = 20
-  storage_type         = "gp2"
-  storage_encrypted    = true
-  kms_key_id          = "arn:aws:kms:ap-southeast-2:990588950671:key/1ef833ca-e366-41bf-ba95-6ef77f570b38"
-  
+  allocated_storage = 20
+  storage_type      = "gp2"
+  storage_encrypted = true
+  kms_key_id        = "arn:aws:kms:ap-southeast-2:990588950671:key/1ef833ca-e366-41bf-ba95-6ef77f570b38"
+
   # Network & Security
   vpc_security_group_ids = ["sg-0c6ff8e93bd998253"]
   db_subnet_group_name   = "default"
   availability_zone      = "ap-southeast-2a"
   publicly_accessible    = true
-  network_type          = "IPV4"
-  
+  network_type           = "IPV4"
+
   # Backup Configuration
   backup_retention_period = 0
-  backup_window          = "16:55-17:25"
-  backup_target          = "region"
-  copy_tags_to_snapshot  = false
-  
+  backup_window           = "16:55-17:25"
+  backup_target           = "region"
+  copy_tags_to_snapshot   = false
+
   # Maintenance Configuration
   maintenance_window         = "Sun:14:15-Sun:14:45"
   auto_minor_version_upgrade = true
   deletion_protection        = false
-  
+
   # Parameter and Option Groups
   parameter_group_name = "default.postgres17"
   option_group_name    = "default:postgres-17"
-  
+
   # Monitoring & Performance
-  monitoring_interval = 0
+  monitoring_interval                   = 0
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
-  performance_insights_kms_key_id      = "arn:aws:kms:ap-southeast-2:990588950671:key/1ef833ca-e366-41bf-ba95-6ef77f570b38"
-  
+  performance_insights_kms_key_id       = "arn:aws:kms:ap-southeast-2:990588950671:key/1ef833ca-e366-41bf-ba95-6ef77f570b38"
+
   # Additional Configuration
-  multi_az               = false
-  license_model         = "postgresql-license"
-  ca_cert_identifier    = "rds-ca-rsa2048-g1"
-  
+  multi_az           = false
+  license_model      = "postgresql-license"
+  ca_cert_identifier = "rds-ca-rsa2048-g1"
+
   # Authentication
   iam_database_authentication_enabled = false
-  manage_master_user_password         = false
-  
+
   skip_final_snapshot = true
-  
+
   tags = {
     Name        = "webapp-rds-instance"
     Environment = "development"
@@ -116,7 +115,7 @@ resource "aws_dynamodb_table" "webapp_messages" {
 
   # Additional Settings
   deletion_protection_enabled = false
-  
+
   # Point-in-time recovery (currently disabled)
   point_in_time_recovery {
     enabled = false

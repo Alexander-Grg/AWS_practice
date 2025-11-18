@@ -4,7 +4,7 @@ terraform {
       source  = "hashicorp/aws"
       version = "5.42.0"
     }
-      dotenv = {
+    dotenv = {
       source  = "jrhouston/dotenv"
       version = "~> 1.0"
     }
