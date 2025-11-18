@@ -36,3 +36,18 @@ package-lock.json
 # Tooling / Installers
 aws/
 awscliv2.zip
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+*_override.tf
+*_override.tf.json
+*.tfplan
+.terraformrc
+terraform.rc
+.env

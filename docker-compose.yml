@@ -1,34 +1,17 @@
 services:
   backend-flask:
-    environment:
-      # These variables will be substituted by the secrets you just created.
-      AWS_XRAY_DAEMON_ADDRESS: "xray-daemon:2000"
-      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION}"
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_COGNITO_USER_POOL_ID: "${AWS_COGNITO_USER_POOL_ID}"
-      AWS_COGNITO_USER_POOL_CLIENT_ID: "${AWS_COGNITO_USER_POOL_CLIENT_ID}"
-
-      # Activate this variable only for local testing purposes. Remove otherwise.
-      # AWS_ENDPOINT_URL: "${AWS_ENDPOINT_URL}"
-
-      CONNECTION_STRING: "${CONNECTION_STRING}"
-      PROD_CONNECTION_STRING: "${PROD_CONNECTION_STRING}"
-      FRONTEND_URL: "${FRONTEND_URL}"
-      BACKEND_URL: "${BACKEND_URL}"
+    env_file:
+      - .env
+      - ./backend-flask/.env.backend
     build: ./backend-flask
     ports:
       - "4567:4567"
     volumes:
       - ./backend-flask:/backend-flask
   frontend-react-js:
-    environment:
-      REACT_APP_AWS_PROJECT_REGION: "${AWS_DEFAULT_REGION}"
-      REACT_APP_AWS_COGNITO_REGION: "${AWS_DEFAULT_REGION}"
-      REACT_APP_CLIENT_ID: "${AWS_COGNITO_USER_POOL_CLIENT_ID}"
-      REACT_APP_AWS_USER_POOLS_ID: "${AWS_COGNITO_USER_POOL_ID}"
-      REACT_APP_BACKEND_URL: "${REACT_APP_BACKEND_URL}"
-      WDS_SOCKET_PORT: 0
+    env_file:
+      - .env
+      - ./frontend-react-js/.env.frontend
     build: ./frontend-react-js
     ports:
       - "3000:3000"
@@ -37,8 +20,11 @@ services:
       - /frontend-react-js/node_modules
       
   dynamodb-local:
+    env_file:
+      - .env
     # https://stackoverflow.com/questions/67533058/persist-local-dynamodb-data-in-volumes-lack-permission-unable-to-open-databa
     # We needed to add user:root to get this working.
+    
     user: root
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
     image: "amazon/dynamodb-local:latest"
@@ -50,20 +36,17 @@ services:
     working_dir: /home/dynamodblocal
   db:
     image: postgres:13-alpine
-    environment:
-      POSTGRES_USER: "${PG_DATABASE}"
-      POSTGRES_PASSWORD: "${PG_PASSWORD}"
     restart: always
+    env_file:
+      - .env
     ports:
       - '5432:5432'
     volumes: 
       - db:/var/lib/postgresql/data
   xray-daemon:
     image: "amazon/aws-xray-daemon"
-    environment:
-      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_REGION: "${AWS_DEFAULT_REGION}"
+    env_file:
+      - .env
     command:
       - "xray -o -b xray-daemon:2000"
     ports:
