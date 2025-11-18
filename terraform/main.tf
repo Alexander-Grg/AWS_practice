@@ -27,3 +27,19 @@ data "dotenv" "backend" {
 data "dotenv" "frontend" {
   filename = "./frontend-react-js/.env.frontend"
 }
+
+# Create ZIP file for Lambda deployment
+data "archive_file" "webapp_messaging_stream_lambda_zip" {
+  type        = "zip"
+  source_file = local_file_webapp_messaging_stream.lambda_source.filename
+  output_path = "${path.module}/${var.function_name_webapp_messaging_stream}.zip"
+  depends_on  = [local_file.lambda_source]
+}
+
+# Create ZIP file for Lambda deployment
+data "archive_file" "lambda_post_confirmation_lambda_zip" {
+  type        = "zip"
+  source_file = local_file_lambda_post_confirmation.lambda_source.filename
+  output_path = "${path.module}/${var.function_name_lambda_post_confirmation}.zip"
+  depends_on  = [local_file.lambda_source]
+}

@@ -140,7 +140,7 @@ output "post_srv_sg_id" {
 }
 
 # IAM Role for webapp-post-confirmation2 Lambda Function
-resource "aws_iam_role" "webapp_post_confirmation2_role" {
+resource "aws_iam_role" "webapp_post_confirmation_role" {
   name = "webapp-post-confirmation2-role"
   
   assume_role_policy = jsonencode({
@@ -159,8 +159,8 @@ resource "aws_iam_role" "webapp_post_confirmation2_role" {
 
 
 # IAM Policy for VPC access
-resource "aws_iam_role_policy_attachment" "webapp_post_confirmation2_vpc_policy" {
-  role       = aws_iam_role.webapp_post_confirmation2_role.name
+resource "aws_iam_role_policy_attachment" "webapp_post_confirmation_vpc_policy" {
+  role       = aws_iam_role.webapp_post_confirmation_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
@@ -191,7 +191,7 @@ resource "aws_iam_policy" "lambda_ec2_policy" {
 }
 
 # IAM Role for Lambda function
-resource "aws_iam_role" "lambda_role" {
+resource "aws_iam_role" "messaging_stream_lambda_role" {
   name = "${var.function_name_webapp_messaging_stream}-role"
 
   assume_role_policy = jsonencode({
@@ -211,4 +211,27 @@ resource "aws_iam_role" "lambda_role" {
     Name        = "${var.function_name_webapp_messaging_stream}-role"
     Environment = var.environment
   } 
+}
+
+# IAM Role for Lambda function
+resource "aws_iam_role" "post_confirmation_lambda_role" {
+  name = "${var.function_name_lambda_post_confirmation}-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.function_name_lambda_post_confirmation}-role"
+    Environment = var.environment
+  }
 }

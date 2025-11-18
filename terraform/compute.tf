@@ -1,5 +1,5 @@
 # Create Lambda function source code
-resource "local_file" "lambda_source" {
+resource "local_file_lambda_post_confirmation" "lambda_source" {
   content = <<EOF
 import json
 import psycopg2
@@ -50,37 +50,6 @@ EOF
   filename = "${path.module}/lambda_function.py"
 }
 
-# Create ZIP file for Lambda deployment
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = local_file.lambda_source.filename
-  output_path = "${path.module}/${var.function_name_lambda_post_confirmation}.zip"
-  depends_on  = [local_file.lambda_source]
-}
-
-# IAM Role for Lambda function
-resource "aws_iam_role" "lambda_role" {
-  name = "${var.function_name_lambda_post_confirmation}-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = {
-    Name        = "${var.function_name_lambda_post_confirmation}-role"
-    Environment = var.environment
-  }
-}
-
 # Attach EC2 policy to Lambda role
 resource "aws_iam_role_policy_attachment" "lambda_ec2_policy_attachment" {
   role       = aws_iam_role.lambda_role.name
@@ -94,7 +63,7 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
 }
 
 # CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "lambda_logs" {
+resource "aws_cloudwatch_log_group" "lambda_post_confirmation_logs" {
   name              = "/aws/lambda/${var.function_name_lambda_post_confirmation}"
   retention_in_days = 14
 
@@ -105,10 +74,10 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
 }
 
 # Lambda function
-resource "aws_lambda_function" "webapp_post_confirmation2" {
+resource "aws_lambda_function" "webapp_post_confirmation" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = var.function_name_lambda_post_confirmation
-  role            = aws_iam_role.lambda_role.arn
+  role            = aws_iam_role.webapp_post_confirmation_role.arn
   handler         = "lambda_function.lambda_handler"
   runtime         = "python3.9"
   timeout         = 3
@@ -138,13 +107,13 @@ resource "aws_lambda_function" "webapp_post_confirmation2" {
 
   logging_config {
     log_format = "Text"
-    log_group  = aws_cloudwatch_log_group.lambda_logs.name
+    log_group  = aws_cloudwatch_log_group.lambda_post_confirmation_logs.name
   }
 
   depends_on = [
     aws_iam_role_policy_attachment.lambda_vpc_access,
     aws_iam_role_policy_attachment.lambda_ec2_policy_attachment,
-    aws_cloudwatch_log_group.lambda_logs,
+    aws_cloudwatch_log_group.lambda_post_confirmation_logs,
     data.archive_file.lambda_zip
   ]
 
@@ -158,29 +127,29 @@ resource "aws_lambda_function" "webapp_post_confirmation2" {
 resource "aws_lambda_permission" "allow_cognito" {
   statement_id  = "AllowExecutionFromCognito"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.webapp_post_confirmation2.function_name
+  function_name = aws_lambda_function.webapp_post_confirmation.function_name
   principal     = "cognito-idp.amazonaws.com"
 }
 
 # Outputs
-output "lambda_function_arn" {
+output "webapp_post_confirmation_lambda_function_arn" {
   description = "ARN of the Lambda function"
-  value       = aws_lambda_function.webapp_post_confirmation2.arn
+  value       = aws_lambda_function.webapp_post_confirmation.arn
 }
 
-output "lambda_function_name" {
+output "post_confirmation_lambda_function_name" {
   description = "Name of the Lambda function"
-  value       = aws_lambda_function.webapp_post_confirmation2.function_name
+  value       = aws_lambda_function.webapp_post_confirmation.function_name
 }
 
-output "lambda_role_arn" {
+output "post_confirmation_lambda_role_arn" {
   description = "ARN of the Lambda IAM role"
-  value       = aws_iam_role.lambda_role.arn
+  value       = aws_iam_role.webapp_post_confirmation_role.arn
 }
 
-output "lambda_log_group_name" {
+output "lpost_confirmation_lambda_log_group_name" {
   description = "Name of the CloudWatch log group"
-  value       = aws_cloudwatch_log_group.lambda_logs.name
+  value       = aws_cloudwatch_log_group.lambda_post_confirmation_logs.name
 }
 
 
@@ -227,7 +196,7 @@ output "lambda_log_group_name" {
 # }
 
 # Create Lambda function source code
-resource "local_file" "lambda_source" {
+resource "local_file_webapp_messaging_stream" "lambda_source" {
   content = <<EOF
 import json
 import boto3
@@ -256,14 +225,6 @@ EOF
   filename = "${path.module}/lambda_function.py"
 }
 
-# Create ZIP file for Lambda deployment
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = local_file.lambda_source.filename
-  output_path = "${path.module}/${var.function_name_webapp_messaging_stream}.zip"
-  depends_on  = [local_file.lambda_source]
-}
-
 # Attach DynamoDB policy to Lambda role
 resource "aws_iam_role_policy_attachment" "lambda_dynamodb_policy_attachment" {
   role       = aws_iam_role.lambda_role.name
@@ -276,14 +237,8 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Attach AWS managed policy for VPC access
-resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
-
 # CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "lambda_logs" {
+resource "aws_cloudwatch_log_group" "webapp_messaging_stream_logs" {
   name              = "/aws/lambda/${var.function_name_webapp_messaging_stream}"
   retention_in_days = 14
 
@@ -320,14 +275,14 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
 
   logging_config {
     log_format = "Text"
-    log_group  = aws_cloudwatch_log_group.lambda_logs.name
+    log_group  = aws_cloudwatch_log_group.webapp_messaging_stream_logs.name
   }
 
   depends_on = [
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_vpc_access,
     aws_iam_role_policy_attachment.lambda_dynamodb_policy_attachment,
-    aws_cloudwatch_log_group.lambda_logs,
+    aws_cloudwatch_log_group.webapp_messaging_stream_logs,
     data.archive_file.lambda_zip
   ]
 
@@ -338,22 +293,22 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
 }
 
 # Outputs
-output "lambda_function_arn" {
+output "webapp_messaging_stream_lambda_function_arn" {
   description = "ARN of the Lambda function"
   value       = aws_lambda_function.webapp_messaging_stream.arn
 }
 
-output "lambda_function_name" {
+output "messaging_stream_lambda_function_name" {
   description = "Name of the Lambda function"
   value       = aws_lambda_function.webapp_messaging_stream.function_name
 }
 
-output "lambda_role_arn" {
+output "messaging_stream_lambda_role_arn" {
   description = "ARN of the Lambda IAM role"
-  value       = aws_iam_role.lambda_role.arn
+  value       = aws_iam_role.messaging_stream_lambda_role.arn
 }
 
-output "lambda_log_group_name" {
+output "messaging_stream_lambda_log_group_name" {
   description = "Name of the CloudWatch log group"
-  value       = aws_cloudwatch_log_group.lambda_logs.name
+  value       = aws_cloudwatch_log_group.webapp_messaging_stream_logs.name
 }
