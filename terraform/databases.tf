@@ -9,7 +9,7 @@ resource "aws_db_instance" "webapp_rds_instance" {
   # Database Configuration
   db_name  = "webapp"
   username = "root"
-  password = var.db_password 
+  password = data.dotenv.main.env["PG_PASSWORD"]
   port     = 5432
   
   # Storage Configuration
@@ -55,20 +55,12 @@ resource "aws_db_instance" "webapp_rds_instance" {
   iam_database_authentication_enabled = false
   manage_master_user_password         = false
   
-  # Disable final snapshot for easier destruction (adjust as needed)
   skip_final_snapshot = true
   
   tags = {
     Name        = "webapp-rds-instance"
-    Environment = "development"  # Adjust as needed
+    Environment = "development"
   }
-}
-
-# Variable for database password (recommended for security)
-variable "db_password" {
-  description = "Password for the RDS instance"
-  type        = string
-  sensitive   = true
 }
 
 # Output the database endpoint

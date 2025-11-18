@@ -1,16 +1,67 @@
-# Lambda Layer for psycopg2
-resource "aws_lambda_layer_version" "psycopg2_layer" {
-  filename         = "psycopg2-layer.zip"
-  layer_name       = "psycopg2"
-  description      = "psycopg2 layer for PostgreSQL connectivity"
-  
-  compatible_runtimes = ["python3.9"]
+# Create Lambda function source code
+resource "local_file" "lambda_source" {
+  content = <<EOF
+import json
+import psycopg2
+import os
+
+def lambda_handler(event, context):
+    user = event['request']['userAttributes']
+    print('userAttributes')
+    print(user)
+
+    user_display_name  = user['name']
+    user_email        = user['email']
+    user_handle       = user['preferred_username']
+    user_cognito_id   = user['sub']
+    try:
+      print('entered-try')
+      sql = f"""
+         INSERT INTO public.users (
+          display_name, 
+          email,
+          handle, 
+          cognito_user_id
+          ) 
+        VALUES(%s,%s,%s,%s)
+      """
+      print('SQL Statement ----')
+      print(sql)
+      conn = psycopg2.connect(os.getenv('PROD_CONNECTION_STRING'))
+      cur = conn.cursor()
+      params = [
+        user_display_name,
+        user_email,
+        user_handle,
+        user_cognito_id
+      ]
+      cur.execute(sql,params)
+      conn.commit() 
+
+    except (Exception, psycopg2.DatabaseError) as error:
+      print(error)
+    finally:
+      if conn is not None:
+          cur.close()
+          conn.close()
+          print('Database connection closed.')
+    return event
+EOF
+  filename = "${path.module}/lambda_function.py"
 }
 
-# IAM Role for webapp-post-confirmation2
-resource "aws_iam_role" "webapp_post_confirmation2_role" {
-  name = "webapp-post-confirmation2-role"
-  
+# Create ZIP file for Lambda deployment
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_file = local_file.lambda_source.filename
+  output_path = "${path.module}/${var.function_name_lambda_post_confirmation}.zip"
+  depends_on  = [local_file.lambda_source]
+}
+
+# IAM Role for Lambda function
+resource "aws_iam_role" "lambda_role" {
+  name = "${var.function_name_lambda_post_confirmation}-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -23,64 +74,286 @@ resource "aws_iam_role" "webapp_post_confirmation2_role" {
       }
     ]
   })
+
+  tags = {
+    Name        = "${var.function_name_lambda_post_confirmation}-role"
+    Environment = var.environment
+  }
 }
 
+# Attach EC2 policy to Lambda role
+resource "aws_iam_role_policy_attachment" "lambda_ec2_policy_attachment" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_ec2_policy.arn
+}
 
-# IAM Policy for VPC access
-resource "aws_iam_role_policy_attachment" "webapp_post_confirmation2_vpc_policy" {
-  role       = aws_iam_role.webapp_post_confirmation2_role.name
+# Attach AWS managed policy for VPC access
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
-# Lambda Function - webapp-post-confirmation2
+# CloudWatch Log Group
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  name              = "/aws/lambda/${var.function_name_lambda_post_confirmation}"
+  retention_in_days = 14
+
+  tags = {
+    Name        = "${var.function_name_lambda_post_confirmation}-logs"
+    Environment = var.environment
+  }
+}
+
+# Lambda function
 resource "aws_lambda_function" "webapp_post_confirmation2" {
-  filename         = "webapp-post-confirmation2.zip"  # You'll need to create this zip file
-  function_name    = "webapp-post-confirmation2"
-  role            = aws_iam_role.webapp_post_confirmation2_role.arn
+  filename         = data.archive_file.lambda_zip.output_path
+  function_name    = var.function_name_lambda_post_confirmation
+  role            = aws_iam_role.lambda_role.arn
   handler         = "lambda_function.lambda_handler"
   runtime         = "python3.9"
-  
-  # Configuration
-  memory_size = 128
-  timeout     = 3
-  
-  # Architecture
-  architectures = ["x86_64"]
-  package_type  = "Zip"
-  
-  # VPC Configuration
+  timeout         = 3
+  memory_size     = 128
+  architectures   = ["x86_64"]
+  package_type    = "Zip"
+  layers          = [var.psycopg2_layer_arn]
+
   vpc_config {
-    subnet_ids         = ["subnet-05fdd389fd107a155", "subnet-08e97c52ff755ea6b", "subnet-0e7147a4b6fa0207d"]
-    security_group_ids = ["sg-0c6ff8e93bd998253"]
+    subnet_ids         = data.aws_subnets.default.ids
+    security_group_ids = [data.aws_security_group.default.id]
   }
-  
-  # Environment Variables
+
   environment {
     variables = {
-      PROD_CONNECTION_STRING = data.dotenv.backend.env["PROD_CONNECTION_STRING"]
+      PROD_CONNECTION_STRING = var.prod_connection_string
     }
   }
-  
-  # Layer
-  layers = [aws_lambda_layer_version.psycopg2_layer.arn]
-  
+
+  ephemeral_storage {
+    size = 512
+  }
+
+  tracing_config {
+    mode = "PassThrough"
+  }
+
+  logging_config {
+    log_format = "Text"
+    log_group  = aws_cloudwatch_log_group.lambda_logs.name
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_vpc_access,
+    aws_iam_role_policy_attachment.lambda_ec2_policy_attachment,
+    aws_cloudwatch_log_group.lambda_logs,
+    data.archive_file.lambda_zip
+  ]
+
   tags = {
-    Name        = "webapp-post-confirmation2"
-    Environment = "production"
+    Name        = var.function_name_lambda_post_confirmation
+    Environment = var.environment
   }
 }
 
-# Updated DynamoDB Stream Event Source Mapping
-resource "aws_lambda_event_source_mapping" "webapp_messaging_stream_trigger" {
-  event_source_arn  = aws_dynamodb_table.webapp_messages.stream_arn
-  function_name     = aws_lambda_function.webapp_messaging_stream.arn
-  starting_position = "LATEST"
-  batch_size        = 1
-  enabled           = true
-
-  depends_on = [
-    aws_dynamodb_table.webapp_messages,
-    aws_lambda_function.webapp_messaging_stream
-  ]
+# Lambda permission for Cognito to invoke the function
+resource "aws_lambda_permission" "allow_cognito" {
+  statement_id  = "AllowExecutionFromCognito"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.webapp_post_confirmation2.function_name
+  principal     = "cognito-idp.amazonaws.com"
 }
 
+# Outputs
+output "lambda_function_arn" {
+  description = "ARN of the Lambda function"
+  value       = aws_lambda_function.webapp_post_confirmation2.arn
+}
+
+output "lambda_function_name" {
+  description = "Name of the Lambda function"
+  value       = aws_lambda_function.webapp_post_confirmation2.function_name
+}
+
+output "lambda_role_arn" {
+  description = "ARN of the Lambda IAM role"
+  value       = aws_iam_role.lambda_role.arn
+}
+
+output "lambda_log_group_name" {
+  description = "Name of the CloudWatch log group"
+  value       = aws_cloudwatch_log_group.lambda_logs.name
+}
+
+
+# Variables for customization
+# variable "function_name" {
+#   description = "Name of the Lambda function"
+#   type        = string
+#   default     = "webapp-messaging-stream"
+# }
+
+# variable "environment" {
+#   description = "Environment name (e.g., dev, staging, prod)"
+#   type        = string
+#   default     = "dev"
+# }
+
+# variable "dynamodb_table_name" {
+#   description = "Name of the DynamoDB table"
+#   type        = string
+#   default     = "webapp-messages"
+# }
+
+# # Data sources
+# data "aws_caller_identity" "current" {}
+# data "aws_region" "current" {}
+
+# # Get default VPC
+# data "aws_vpc" "default" {
+#   default = true
+# }
+
+# # Get default subnets
+# data "aws_subnets" "default" {
+#   filter {
+#     name   = "vpc-id"
+#     values = [data.aws_vpc.default.id]
+#   }
+# }
+
+# # Get default security group
+# data "aws_security_group" "default" {
+#   name   = "default"
+#   vpc_id = data.aws_vpc.default.id
+# }
+
+# Create Lambda function source code
+resource "local_file" "lambda_source" {
+  content = <<EOF
+import json
+import boto3
+from boto3.dynamodb.conditions import Key, Attr
+
+dynamodb = boto3.resource('dynamodb')
+table_name = 'webapp-messages'
+table = dynamodb.Table(table_name)
+
+def lambda_handler(event, context):
+    print('event:', event)
+    
+    message_group_uuid = event['message_group_uuid']
+    
+    # Query DynamoDB
+    response = table.query(
+        KeyConditionExpression=Key('message_group_uuid').eq(message_group_uuid)
+    )
+    
+    # Return the items
+    return {
+        'statusCode': 200,
+        'body': json.dumps(response['Items'])
+    }
+EOF
+  filename = "${path.module}/lambda_function.py"
+}
+
+# Create ZIP file for Lambda deployment
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_file = local_file.lambda_source.filename
+  output_path = "${path.module}/${var.function_name_webapp_messaging_stream}.zip"
+  depends_on  = [local_file.lambda_source]
+}
+
+# Attach DynamoDB policy to Lambda role
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb_policy_attachment" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
+}
+
+# Attach AWS managed policy for basic Lambda execution
+resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# Attach AWS managed policy for VPC access
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+# CloudWatch Log Group
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  name              = "/aws/lambda/${var.function_name_webapp_messaging_stream}"
+  retention_in_days = 14
+
+  tags = {
+    Name        = "${var.function_name_webapp_messaging_stream}-logs"
+    Environment = var.environment
+  }
+}
+
+# Lambda function
+resource "aws_lambda_function" "webapp_messaging_stream" {
+  filename         = data.archive_file.lambda_zip.output_path
+  function_name    = var.function_name_webapp_messaging_stream
+  role            = aws_iam_role.lambda_role.arn
+  handler         = "lambda_function.lambda_handler"
+  runtime         = "python3.13"
+  timeout         = 3
+  memory_size     = 128
+  architectures   = ["x86_64"]
+  package_type    = "Zip"
+
+  vpc_config {
+    subnet_ids         = data.aws_subnets.default.ids
+    security_group_ids = [data.aws_security_group.default.id]
+  }
+
+  ephemeral_storage {
+    size = 512
+  }
+
+  tracing_config {
+    mode = "PassThrough"
+  }
+
+  logging_config {
+    log_format = "Text"
+    log_group  = aws_cloudwatch_log_group.lambda_logs.name
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_basic_execution,
+    aws_iam_role_policy_attachment.lambda_vpc_access,
+    aws_iam_role_policy_attachment.lambda_dynamodb_policy_attachment,
+    aws_cloudwatch_log_group.lambda_logs,
+    data.archive_file.lambda_zip
+  ]
+
+  tags = {
+    Name        = var.function_name_webapp_messaging_stream
+    Environment = var.environment
+  }
+}
+
+# Outputs
+output "lambda_function_arn" {
+  description = "ARN of the Lambda function"
+  value       = aws_lambda_function.webapp_messaging_stream.arn
+}
+
+output "lambda_function_name" {
+  description = "Name of the Lambda function"
+  value       = aws_lambda_function.webapp_messaging_stream.function_name
+}
+
+output "lambda_role_arn" {
+  description = "ARN of the Lambda IAM role"
+  value       = aws_iam_role.lambda_role.arn
+}
+
+output "lambda_log_group_name" {
+  description = "Name of the CloudWatch log group"
+  value       = aws_cloudwatch_log_group.lambda_logs.name
+}
