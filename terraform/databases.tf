@@ -20,7 +20,7 @@ resource "aws_db_instance" "webapp_rds_instance" {
 
   # Network & Security
   vpc_security_group_ids = ["sg-0c6ff8e93bd998253"]
-  db_subnet_group_name   = "default"
+  db_subnet_group_name   = aws_db_subnet_group.webapp_db_subnet_group.name
   availability_zone      = "ap-southeast-2a"
   publicly_accessible    = true
   network_type           = "IPV4"

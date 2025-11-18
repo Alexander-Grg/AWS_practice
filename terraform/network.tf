@@ -84,3 +84,13 @@ resource "aws_route_table_association" "subnet_2c" {
   route_table_id = aws_route_table.main.id
 }
 
+# Create DB Subnet Group
+resource "aws_db_subnet_group" "webapp_db_subnet_group" {
+  name       = "webapp-db-subnet-group"
+  subnet_ids = [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id]
+
+  tags = {
+    Name        = "webapp-db-subnet-group"
+    Environment = "development"
+  }
+}

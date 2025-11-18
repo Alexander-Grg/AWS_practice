@@ -49,7 +49,8 @@ resource "aws_security_group" "default_sg" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = [data.dotenv.main.env["CODESPACE_IP"]]
+    # cidr_blocks = [data.dotenv.main.env["CODESPACE_IP"]]
+    cidr_blocks = ["42.118.112.70/32"]
   }
 
   ingress {
@@ -139,9 +140,9 @@ output "post_srv_sg_id" {
   value       = aws_security_group.post_srv_sg.id
 }
 
-# IAM Role for webapp-post-confirmation2 Lambda Function
+# IAM Role for webapp-post-confirmation Lambda Function
 resource "aws_iam_role" "webapp_post_confirmation_role" {
-  name = "webapp-post-confirmation2-role"
+  name = "webapp-post-confirmation-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -255,8 +256,8 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
           "dynamodb:ListStreams"
         ]
         Resource = [
-          "arn:aws:dynamodb:${data.dotenv.main.env["AWS_DEFAULT_REGION"]}:${data.dotenv.main.env["AWS_ACCESS_KEY_ID"]}:table/${var.dynamodb_table_name}",
-          "arn:aws:dynamodb:${data.dotenv.main.env["AWS_DEFAULT_REGION"]}:${data.dotenv.main.env["AWS_ACCESS_KEY_ID"]}:table/${var.dynamodb_table_name}/stream/*"
+          "arn:aws:dynamodb:${data.dotenv.main.env["AWS_DEFAULT_REGION"]}:${data.dotenv.main.env["AWS_ACCOUNT_ID"]}:table/${var.dynamodb_table_name}",
+          "arn:aws:dynamodb:${data.dotenv.main.env["AWS_DEFAULT_REGION"]}:${data.dotenv.main.env["AWS_ACCOUNT_ID"]}:table/${var.dynamodb_table_name}/stream/*"
         ]
       }
     ]
