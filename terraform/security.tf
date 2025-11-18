@@ -138,3 +138,77 @@ output "crud_srv_sg_id" {
   description = "ID of the crud-srv-sg security group"
   value       = aws_security_group.crud_srv_sg.id
 }
+
+# IAM Role for cruddur-post-confirmation2 Lambda Function
+resource "aws_iam_role" "cruddur_post_confirmation2_role" {
+  name = "cruddur-post-confirmation2-role"
+  
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+
+# IAM Policy for VPC access
+resource "aws_iam_role_policy_attachment" "cruddur_post_confirmation2_vpc_policy" {
+  role       = aws_iam_role.cruddur_post_confirmation2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+# IAM Policy for EC2 network interface operations
+resource "aws_iam_policy" "lambda_ec2_policy" {
+  name        = "${var.function_name_cruddur_messaging_stream}-ec2-policy"
+  description = "Policy for Lambda to manage EC2 network interfaces"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AttachNetworkInterface",
+          "ec2:DetachNetworkInterface",
+          "ec2:DescribeInstances",
+          "ec2:AssignPrivateIpAddresses",
+          "ec2:UnassignPrivateIpAddresses"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# IAM Role for Lambda function
+resource "aws_iam_role" "lambda_role" {
+  name = "${var.function_name_cruddur_messaging_stream}-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.function_name_cruddur_messaging_stream}-role"
+    Environment = var.environment
+  } 
+}
