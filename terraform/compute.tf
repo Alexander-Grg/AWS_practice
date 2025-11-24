@@ -78,17 +78,11 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
   memory_size   = 128
   architectures = ["x86_64"]
   package_type  = "Zip"
-  layers        = [var.psycopg2_layer_arn]
+  layers        = [aws_lambda_layer_version.psycopg2.arn]
 
   vpc_config {
     subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
-    security_group_ids = [aws_security_group.default_sg.vpc_id]
-  }
-
-  environment {
-    variables = {
-      PROD_CONNECTION_STRING = var.prod_connection_string
-    }
+    security_group_ids = [aws_security_group.default_sg.id]
   }
 
   ephemeral_storage {
@@ -201,7 +195,7 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
 
   vpc_config {
     subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
-    security_group_ids = [aws_security_group.default_sg.vpc_id]
+    security_group_ids = [aws_security_group.default_sg.id]
   }
 
   ephemeral_storage {
@@ -250,4 +244,24 @@ output "messaging_stream_lambda_role_arn" {
 output "messaging_stream_lambda_log_group_name" {
   description = "Name of the CloudWatch log group"
   value       = aws_cloudwatch_log_group.webapp_messaging_stream_logs.name
+}
+
+# Layers
+
+data "archive_file" "psycopg2_layer_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/layers/psycopg2"
+  output_path = "${path.module}/layers/psycopg2.zip"
+}
+
+resource "aws_lambda_layer_version" "psycopg2" {
+  filename            = data.archive_file.psycopg2_layer_zip.output_path
+  layer_name          = "psycopg2-layer"
+  description         = "Psycopg2 Postgres Client Layer"
+  
+  source_code_hash    = data.archive_file.psycopg2_layer_zip.output_base64sha256
+
+  compatible_runtimes = ["python3.8", "python3.9", "python3.10"]
+  
+  compatible_architectures = ["x86_64"]
 }

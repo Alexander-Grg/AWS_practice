@@ -2,6 +2,14 @@
 
 set -e
 
+if [ -f ".env" ]; then
+    echo "Loading .env variables..."
+    export $(grep -v '^#' .env | xargs)
+else
+    echo "Error: .env file not found at project root!"
+    exit 1
+fi
+
 if [ -z "$1" ]; then
   echo "No TABLE_NAME argument supplied eg. bin/rds/describ-table webapp-messages"
   exit 1

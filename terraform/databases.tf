@@ -16,10 +16,9 @@ resource "aws_db_instance" "webapp_rds_instance" {
   allocated_storage = 20
   storage_type      = "gp2"
   storage_encrypted = true
-  kms_key_id        = "arn:aws:kms:ap-southeast-2:990588950671:key/1ef833ca-e366-41bf-ba95-6ef77f570b38"
 
   # Network & Security
-  vpc_security_group_ids = ["sg-0c6ff8e93bd998253"]
+  vpc_security_group_ids = [aws_security_group.default_sg.id]
   db_subnet_group_name   = aws_db_subnet_group.webapp_db_subnet_group.name
   availability_zone      = "ap-southeast-2a"
   publicly_accessible    = true
@@ -44,7 +43,6 @@ resource "aws_db_instance" "webapp_rds_instance" {
   monitoring_interval                   = 0
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
-  performance_insights_kms_key_id       = "arn:aws:kms:ap-southeast-2:990588950671:key/1ef833ca-e366-41bf-ba95-6ef77f570b38"
 
   # Additional Configuration
   multi_az           = false
@@ -71,6 +69,12 @@ output "rds_endpoint" {
 output "rds_port" {
   description = "RDS instance port"
   value       = aws_db_instance.webapp_rds_instance.port
+}
+
+output "db_connection_string" {
+  description = "Connection string for local development"
+  value       = "postgresql://root:${data.dotenv.main.env["PG_PASSWORD"]}@${aws_db_instance.webapp_rds_instance.endpoint}/webapp"
+  sensitive   = true
 }
 
 

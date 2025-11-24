@@ -31,7 +31,7 @@ resource "aws_security_group" "launch_wizard_1" {
 
 # Security Group 2: default
 resource "aws_security_group" "default_sg" {
-  name        = "default"
+  name        = "webapp-main-sg"
   description = "default VPC security group"
   vpc_id      = aws_vpc.main.id
 
