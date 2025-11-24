@@ -2,20 +2,40 @@
 set -e
 
 echo "==== db-setup"
+
+# Load Environment Variables
+if [ -f ".env" ]; then
+    echo "Loading .env variables..."
+    set -a
+    source .env
+    set +a
+else
+    echo "ERROR: .env file not found."
+    exit 1
+fi
+
+if [ -z "$CONNECTION_STRING" ]; then
+    export CONNECTION_STRING=$CONNECTION_URL
+fi
+
 bin_path="backend-flask/bin"
 
-# Stop the backend container to release database connections
 echo "Stopping backend-flask..."
-docker-compose stop backend-flask
+docker compose stop backend-flask
 
-# Run the database scripts
-"$bin_path/db/drop"
-"$bin_path/db/create"
-"$bin_path/db/schema-load"
-"$bin_path/db/seed"
+echo "Running drop..."
+source "$bin_path/db/drop"
 
-# Restart the backend container
+echo "Running create..."
+source "$bin_path/db/create"
+
+echo "Running schema-load..."
+source "$bin_path/db/schema-load"
+
+echo "Running seed..."
+source "$bin_path/db/seed"
+
 echo "Starting backend-flask..."
-docker-compose up -d backend-flask
+docker compose up -d backend-flask
 
 echo "Setup complete."

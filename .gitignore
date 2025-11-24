@@ -51,3 +51,7 @@ crash.*.log
 .terraformrc
 terraform.rc
 .env
+
+# Terraform Custom Layers
+terraform/layers/
+*.zip
