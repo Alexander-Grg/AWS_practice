@@ -18,16 +18,6 @@ data "dotenv" "main" {
   filename = "../.env"
 }
 
-# Backend .env file
-data "dotenv" "backend" {
-  filename = "../backend-flask/.env.backend"
-}
-
-# Frontend .env file  
-data "dotenv" "frontend" {
-  filename = "../frontend-react-js/.env.frontend"
-}
-
 # Create ZIP file for Lambda deployment
 data "archive_file" "webapp_messaging_stream_lambda_zip" {
   type        = "zip"

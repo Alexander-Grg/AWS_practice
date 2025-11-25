@@ -21,10 +21,6 @@ resource "aws_cloudwatch_log_group" "webapp_fargate_cluster_managed" {
     Environment = var.environment
     Project     = var.project_name
   }
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # RDS CloudWatch Alarms

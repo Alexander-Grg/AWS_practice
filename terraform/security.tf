@@ -281,3 +281,129 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
   role       = aws_iam_role.messaging_stream_lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
+
+# 1. The User Pool
+resource "aws_cognito_user_pool" "main" {
+  name = "webapp-user-pool"
+
+  # Allow users to sign in with their email address
+  username_attributes = ["email"]
+  auto_verified_attributes = ["email"]
+
+  password_policy {
+    minimum_length    = 8
+    require_lowercase = true
+    require_numbers   = true
+    require_symbols   = true
+    require_uppercase = true
+  }
+
+  verification_message_template {
+    default_email_option = "CONFIRM_WITH_CODE"
+    email_subject = "Account Confirmation"
+    email_message = "Your confirmation code is {####}"
+  }
+
+  schema {
+    attribute_data_type = "String"
+    name               = "name"
+    required           = true
+    mutable           = true
+  }
+
+  schema {
+    attribute_data_type = "String"
+    name               = "email"
+    required           = true
+    mutable           = true
+  }
+  
+  lambda_config {
+    post_confirmation = aws_lambda_function.webapp_post_confirmation.arn
+  }
+}
+
+resource "aws_cognito_user_pool_client" "client" {
+  name = "webapp-app-client"
+  user_pool_id = aws_cognito_user_pool.main.id
+
+  generate_secret = false
+  
+  # CRITICAL for Amplify/Web SDKs
+  explicit_auth_flows = [
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_CUSTOM_AUTH"
+  ]
+
+  # OAuth Settings
+  supported_identity_providers = ["COGNITO"]
+  callback_urls = ["http://localhost:3000/signin"]
+  logout_urls   = ["http://localhost:3000/signin"]
+}
+
+# 3. Identity Pool (For swapping JWT tokens for AWS Credentials)
+resource "aws_cognito_identity_pool" "main" {
+  identity_pool_name               = "webapp-identity-pool"
+  allow_unauthenticated_identities = true
+
+  cognito_identity_providers {
+    client_id               = aws_cognito_user_pool_client.client.id
+    provider_name           = aws_cognito_user_pool.main.endpoint
+    server_side_token_check = false
+  }
+}
+
+resource "aws_iam_role" "authenticated" {
+  name = "webapp-cognito-authenticated-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = "cognito-identity.amazonaws.com"
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          "StringEquals" = {
+            "cognito-identity.amazonaws.com:aud" = aws_cognito_identity_pool.main.id
+          }
+          "ForAnyValue:StringLike" = {
+            "cognito-identity.amazonaws.com:amr" = "authenticated"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# Basic policy for authenticated users
+resource "aws_iam_role_policy" "authenticated_policy" {
+  name = "webapp-authenticated-policy"
+  role = aws_iam_role.authenticated.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "mobileanalytics:PutEvents",
+          "cognito-sync:*",
+          "cognito-identity:*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_cognito_identity_pool_roles_attachment" "main" {
+  identity_pool_id = aws_cognito_identity_pool.main.id
+
+  roles = {
+    "authenticated" = aws_iam_role.authenticated.arn
+  }
+}
