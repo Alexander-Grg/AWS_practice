@@ -18,7 +18,7 @@ export default function ReplyForm(props) {
   const onsubmit = async (event) => {
     event.preventDefault();
     try {
-      const backend_url = `$${process.env.REACT_APP_BACKEND_URL}/api/activities/${props.activity.uuid}/reply`
+      const backend_url = `/api/activities/${props.activity.uuid}/reply`
       const res = await fetch(backend_url, {
         method: "POST",
         headers: {
