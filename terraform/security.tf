@@ -49,7 +49,7 @@ resource "aws_security_group" "default_sg" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = ["127.0.0.1/32"]
+    cidr_blocks = [data.dotenv.main.env["ALLOWED_IP"]]
   }
 
   ingress {
