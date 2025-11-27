@@ -73,12 +73,18 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
   function_name = var.function_name_lambda_post_confirmation
   role          = aws_iam_role.webapp_post_confirmation_role.arn
   handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.9"
-  timeout       = 3
+  runtime       = "python3.12"
+  timeout       = 10
   memory_size   = 128
   architectures = ["x86_64"]
   package_type  = "Zip"
   layers        = [aws_lambda_layer_version.psycopg2.arn]
+
+  environment {
+    variables = {
+      PROD_CONNECTION_STRING = "postgresql://${aws_db_instance.webapp_rds_instance.username}:${aws_db_instance.webapp_rds_instance.password}@${aws_db_instance.webapp_rds_instance.endpoint}/${aws_db_instance.webapp_rds_instance.db_name}"
+    }
+  }
 
   vpc_config {
     subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
@@ -225,6 +231,15 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
   }
 }
 
+# Event Source Mapping for DynamoDB Stream
+resource "aws_lambda_event_source_mapping" "messaging_stream_trigger" {
+  event_source_arn  = aws_dynamodb_table.webapp_messages.stream_arn
+  function_name     = aws_lambda_function.webapp_messaging_stream.arn
+  starting_position = "LATEST"
+  batch_size        = 1
+  enabled           = true
+}
+
 # Outputs
 output "webapp_messaging_stream_lambda_function_arn" {
   description = "ARN of the Lambda function"
@@ -256,12 +271,12 @@ data "archive_file" "psycopg2_layer_zip" {
 
 resource "aws_lambda_layer_version" "psycopg2" {
   filename            = data.archive_file.psycopg2_layer_zip.output_path
-  layer_name          = "psycopg2-layer"
-  description         = "Psycopg2 Postgres Client Layer"
+  layer_name          = "psycopg2-python312-layer"
+  description         = "Psycopg2 binary for Python 3.12 (Amazon Linux 2023)"
   
   source_code_hash    = data.archive_file.psycopg2_layer_zip.output_base64sha256
 
-  compatible_runtimes = ["python3.8", "python3.9", "python3.10"]
+  compatible_runtimes = ["python3.12"]
   
   compatible_architectures = ["x86_64"]
 }
