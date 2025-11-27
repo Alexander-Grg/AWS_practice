@@ -45,12 +45,11 @@ resource "aws_security_group" "default_sg" {
   }
 
   ingress {
-    description = "PostgreSQL access for Codespaces"
+    description = "PostgreSQL access for the localhost"
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    # cidr_blocks = [data.dotenv.main.env["CODESPACE_IP"]]
-    cidr_blocks = ["42.118.112.70/32"]
+    cidr_blocks = ["127.0.0.1/32"]
   }
 
   ingress {
