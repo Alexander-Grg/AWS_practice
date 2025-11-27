@@ -1,15 +1,27 @@
-#! /usr/bin/bash
+#!/usr/bin/env bash
 
-# Select the connection string based on the environment argument
+if [ -f ".env" ]; then
+  set -a; source .env; set +a
+elif [ -f "../.env" ]; then
+  set -a; source ../.env; set +a
+else
+  echo "WARNING: No .env file found. Expecting variables to be set in shell."
+fi
+
 if [ "$1" = "prod" ]; then
-  echo "Running in production mode"
+  echo "== Running in PRODUCTION mode =="
   URL=$PROD_CONNECTION_STRING
 else
+  echo "== Running in LOCAL mode =="
   URL=$CONNECTION_STRING
 fi
 
-# Replace the internal hostname 'db' with 'localhost' for host access
+if [ -z "$URL" ]; then
+  echo "ERROR: The connection string is empty!"
+  echo "       Please check that CONNECTION_STRING is defined in your .env file."
+  exit 1
+fi
+
 URL_FOR_HOST=$(echo "$URL" | sed 's/@db/@localhost/g')
 
-# Connect to the database using the modified URL
 psql "$URL_FOR_HOST"
