@@ -6,8 +6,6 @@ import DesktopNavigation  from '../components/DesktopNavigation';
 import DesktopSidebar     from '../components/DesktopSidebar';
 import ActivityFeed from '../components/ActivityFeed';
 import ActivityForm from '../components/ActivityForm';
-
-// [TODO] Authenication
 import Cookies from 'js-cookie'
 
 export default function UserFeedPage() {
@@ -21,7 +19,7 @@ export default function UserFeedPage() {
 
   const loadData = async () => {
     try {
-      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/${title}`
+      const backend_url = `/api/activities/${title}`
       const res = await fetch(backend_url, {
         method: "GET"
       });
