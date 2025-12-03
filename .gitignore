@@ -55,3 +55,10 @@ terraform.rc
 # Terraform Custom Layers
 terraform/layers/
 *.zip
+
+# Ignore Terraform build artifacts anywhere in the project
+**/layer_build/
+**/generated_zips/
+*.tfstate
+*.tfstate.backup
+.terraform/
