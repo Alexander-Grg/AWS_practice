@@ -78,20 +78,7 @@ def lambda_handler(event, context):
 EOF
 }
 
-# 2. ZIPPING LOGIC 
-data "archive_file" "lambda_post_confirmation_lambda_zip" {
-  type        = "zip"
-  source_file = local_file.lambda_post_confirmation_source.filename
-  output_path = "${path.module}/post_confirmation.zip"
-}
-
-data "archive_file" "webapp_messaging_stream_lambda_zip" {
-  type        = "zip"
-  source_file = local_file.webapp_messaging_stream_source.filename
-  output_path = "${path.module}/messaging_stream.zip"
-}
-
-# 3. LAMBDA LAYER
+# 2. LAMBDA LAYER
 
 resource "null_resource" "build_psycopg2_layer" {
   triggers = {
@@ -128,7 +115,7 @@ resource "aws_lambda_layer_version" "psycopg2" {
   compatible_architectures = ["x86_64"]
 }
 
-# 4. LAMBDA FUNCTIONS
+# 3. LAMBDA FUNCTIONS
 
 # --- Post Confirmation ---
 
@@ -266,7 +253,7 @@ resource "aws_lambda_event_source_mapping" "messaging_stream_trigger" {
   enabled           = true
 }
 
-# 5. OUTPUTS
+# 4. OUTPUTS
 output "webapp_post_confirmation_lambda_function_arn" {
   description = "ARN of the Lambda function"
   value       = aws_lambda_function.webapp_post_confirmation.arn
