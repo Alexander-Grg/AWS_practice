@@ -9,7 +9,7 @@ resource "aws_db_instance" "webapp_rds_instance" {
   # Database Configuration
   db_name  = "webapp"
   username = "root"
-  password = data.dotenv.main.env["PG_PASSWORD"]
+  password = var.db_password
   port     = 5432
 
   # Storage Configuration
@@ -73,7 +73,7 @@ output "rds_port" {
 
 output "db_connection_string" {
   description = "Connection string for local development"
-  value       = "postgresql://root:${data.dotenv.main.env["PG_PASSWORD"]}@${aws_db_instance.webapp_rds_instance.endpoint}/webapp"
+  value       = "postgresql://root:${var.db_password}@${aws_db_instance.webapp_rds_instance.endpoint}/webapp"
   sensitive   = true
 }
 

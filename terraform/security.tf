@@ -10,7 +10,7 @@ resource "aws_security_group" "launch_wizard_1" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [data.dotenv.main.env["ALLOWED_IP"]]
+    cidr_blocks = [var.allowed_ip]
   }
 
   # Outbound Rules
@@ -41,7 +41,7 @@ resource "aws_security_group" "default_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = [data.dotenv.main.env["ALLOWED_IP"]]
+    cidr_blocks = [var.allowed_ip]
   }
 
   ingress {
@@ -49,7 +49,7 @@ resource "aws_security_group" "default_sg" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = [data.dotenv.main.env["ALLOWED_IP"]]
+    cidr_blocks = [var.allowed_ip]
   }
 
   ingress {
@@ -65,7 +65,7 @@ resource "aws_security_group" "default_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [data.dotenv.main.env["ALLOWED_IP"]]
+    cidr_blocks = [var.allowed_ip]
   }
 
   # ingress {
@@ -104,7 +104,7 @@ resource "aws_security_group" "post_srv_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = [data.dotenv.main.env["ALLOWED_IP"]]
+    cidr_blocks = [var.allowed_ip]
   }
 
   # Outbound Rules
@@ -265,8 +265,8 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
           "dynamodb:ListStreams"
         ]
         Resource = [
-          "arn:aws:dynamodb:${data.dotenv.main.env["AWS_DEFAULT_REGION"]}:${data.dotenv.main.env["AWS_ACCOUNT_ID"]}:table/${var.dynamodb_table_name}",
-          "arn:aws:dynamodb:${data.dotenv.main.env["AWS_DEFAULT_REGION"]}:${data.dotenv.main.env["AWS_ACCOUNT_ID"]}:table/${var.dynamodb_table_name}/stream/*"
+          "arn:aws:dynamodb:${var.default_region}:${var.aws_account_id}:table/${var.dynamodb_table_name}",
+          "arn:aws:dynamodb:${var.default_region}:${var.aws_account_id}:table/${var.dynamodb_table_name}/stream/*"
         ]
       }
     ]

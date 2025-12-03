@@ -4,6 +4,29 @@ variable "project_name" {
   default     = "webapp"
 }
 
+variable "db_password" {
+  description = "Variable for PG db"
+  type = string
+  sensitive = true
+}
+
+variable "allowed_ip" {
+  description = "IP that allowed for the AWS security group"
+  type = string
+  sensitive = true
+}
+
+variable "aws_account_id" {
+  description = "AWS account ID"
+  type = string
+  sensitive = true
+}
+
+variable "default_region" {
+  description = "AWS default region"
+  type = string
+}
+
 # Lambda function post-confirmation
 variable "function_name_lambda_post_confirmation" {
   description = "Name of the Lambda function"
