@@ -1,5 +1,6 @@
-# Create Lambda function source code
+# Source for Post Confirmation
 resource "local_file" "lambda_post_confirmation_source" {
+  filename = "${path.module}/post_confirmation.py"
   content  = <<EOF
 import json
 import psycopg2
@@ -17,7 +18,7 @@ def lambda_handler(event, context):
     try:
       print('entered-try')
       sql = f"""
-         INSERT INTO public.users (
+          INSERT INTO public.users (
           display_name, 
           email,
           handle, 
@@ -47,32 +48,110 @@ def lambda_handler(event, context):
           print('Database connection closed.')
     return event
 EOF
-  filename = "${path.module}/lambda_function.py"
 }
 
-# Attach EC2 policy to Lambda role
+# Source for Messaging Stream
+resource "local_file" "webapp_messaging_stream_source" {
+  filename = "${path.module}/messaging_stream.py"
+  content  = <<EOF
+import json
+import boto3
+from boto3.dynamodb.conditions import Key, Attr
+
+dynamodb = boto3.resource('dynamodb')
+table_name = 'webapp-messages'
+table = dynamodb.Table(table_name)
+
+def lambda_handler(event, context):
+    print('event:', event)
+    
+    message_group_uuid = event['message_group_uuid']
+    
+    # Query DynamoDB
+    response = table.query(
+        KeyConditionExpression=Key('message_group_uuid').eq(message_group_uuid)
+    )
+    return {
+        'statusCode': 200,
+        'body': json.dumps(response['Items'])
+    }
+EOF
+}
+
+# 2. ZIPPING LOGIC 
+data "archive_file" "lambda_post_confirmation_lambda_zip" {
+  type        = "zip"
+  source_file = local_file.lambda_post_confirmation_source.filename
+  output_path = "${path.module}/post_confirmation.zip"
+}
+
+data "archive_file" "webapp_messaging_stream_lambda_zip" {
+  type        = "zip"
+  source_file = local_file.webapp_messaging_stream_source.filename
+  output_path = "${path.module}/messaging_stream.zip"
+}
+
+# 3. LAMBDA LAYER
+
+resource "null_resource" "build_psycopg2_layer" {
+  triggers = {
+    requirements = filemd5("${path.module}/layers/psycopg2/requirements.txt")
+  }
+  provisioner "local-exec" {
+    command = <<EOT
+      rm -rf ${path.module}/layers/psycopg2/python
+      mkdir -p ${path.module}/layers/psycopg2/python
+      pip install -r ${path.module}/layers/psycopg2/requirements.txt \
+        -t ${path.module}/layers/psycopg2/python \
+        --platform manylinux2014_x86_64 \
+        --only-binary=:all: \
+        --implementation cp \
+        --python-version 3.12
+    EOT
+  }
+}
+
+data "archive_file" "psycopg2_layer_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/layers/psycopg2"
+  output_path = "${path.module}/layers/psycopg2.zip"
+  excludes    = ["requirements.txt"]
+  depends_on  = [null_resource.build_psycopg2_layer]
+}
+
+resource "aws_lambda_layer_version" "psycopg2" {
+  filename            = data.archive_file.psycopg2_layer_zip.output_path
+  layer_name          = "psycopg2-python312-layer"
+  description         = "Psycopg2 binary for Python 3.12"
+  source_code_hash    = data.archive_file.psycopg2_layer_zip.output_base64sha256
+  compatible_runtimes = ["python3.12"]
+  compatible_architectures = ["x86_64"]
+}
+
+# 4. LAMBDA FUNCTIONS
+
+# --- Post Confirmation ---
+
 resource "aws_iam_role_policy_attachment" "lambda_ec2_policy_attachment" {
   role       = aws_iam_role.post_confirmation_lambda_role.name
   policy_arn = aws_iam_policy.lambda_ec2_policy.arn
 }
 
-# CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "lambda_post_confirmation_logs" {
   name              = "/aws/lambda/${var.function_name_lambda_post_confirmation}"
   retention_in_days = 14
-
   tags = {
     Name        = "${var.function_name_lambda_post_confirmation}-logs"
     Environment = var.environment
   }
 }
 
-# Lambda function
 resource "aws_lambda_function" "webapp_post_confirmation" {
   filename      = data.archive_file.lambda_post_confirmation_lambda_zip.output_path
   function_name = var.function_name_lambda_post_confirmation
   role          = aws_iam_role.webapp_post_confirmation_role.arn
-  handler       = "lambda_function.lambda_handler"
+  handler       = "post_confirmation.lambda_handler" 
+  
   runtime       = "python3.12"
   timeout       = 10
   memory_size   = 128
@@ -117,7 +196,6 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
   }
 }
 
-# Lambda permission for Cognito to invoke the function
 resource "aws_lambda_permission" "allow_cognito" {
   statement_id  = "AllowExecutionFromCognito"
   action        = "lambda:InvokeFunction"
@@ -125,74 +203,23 @@ resource "aws_lambda_permission" "allow_cognito" {
   principal     = "cognito-idp.amazonaws.com"
 }
 
-# Outputs
-output "webapp_post_confirmation_lambda_function_arn" {
-  description = "ARN of the Lambda function"
-  value       = aws_lambda_function.webapp_post_confirmation.arn
-}
+# --- Messaging Stream ---
 
-output "post_confirmation_lambda_function_name" {
-  description = "Name of the Lambda function"
-  value       = aws_lambda_function.webapp_post_confirmation.function_name
-}
-
-output "post_confirmation_lambda_role_arn" {
-  description = "ARN of the Lambda IAM role"
-  value       = aws_iam_role.webapp_post_confirmation_role.arn
-}
-
-output "lpost_confirmation_lambda_log_group_name" {
-  description = "Name of the CloudWatch log group"
-  value       = aws_cloudwatch_log_group.lambda_post_confirmation_logs.name
-}
-
-# Create Lambda function source code
-resource "local_file" "webapp_messaging_stream_source" {
-  content  = <<EOF
-import json
-import boto3
-from boto3.dynamodb.conditions import Key, Attr
-
-dynamodb = boto3.resource('dynamodb')
-table_name = 'webapp-messages'
-table = dynamodb.Table(table_name)
-
-def lambda_handler(event, context):
-    print('event:', event)
-    
-    message_group_uuid = event['message_group_uuid']
-    
-    # Query DynamoDB
-    response = table.query(
-        KeyConditionExpression=Key('message_group_uuid').eq(message_group_uuid)
-    )
-    
-    # Return the items
-    return {
-        'statusCode': 200,
-        'body': json.dumps(response['Items'])
-    }
-EOF
-  filename = "${path.module}/lambda_function.py"
-}
-
-# CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "webapp_messaging_stream_logs" {
   name              = "/aws/lambda/${var.function_name_webapp_messaging_stream}"
   retention_in_days = 14
-
   tags = {
     Name        = "${var.function_name_webapp_messaging_stream}-logs"
     Environment = var.environment
   }
 }
 
-# Lambda function
 resource "aws_lambda_function" "webapp_messaging_stream" {
   filename      = data.archive_file.webapp_messaging_stream_lambda_zip.output_path
   function_name = var.function_name_webapp_messaging_stream
   role          = aws_iam_role.messaging_stream_lambda_role.arn
-  handler       = "lambda_function.lambda_handler"
+  handler       = "messaging_stream.lambda_handler"
+  
   runtime       = "python3.12"
   timeout       = 3
   memory_size   = 128
@@ -231,7 +258,6 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
   }
 }
 
-# Event Source Mapping for DynamoDB Stream
 resource "aws_lambda_event_source_mapping" "messaging_stream_trigger" {
   event_source_arn  = aws_dynamodb_table.webapp_messages.stream_arn
   function_name     = aws_lambda_function.webapp_messaging_stream.arn
@@ -240,7 +266,27 @@ resource "aws_lambda_event_source_mapping" "messaging_stream_trigger" {
   enabled           = true
 }
 
-# Outputs
+# 5. OUTPUTS
+output "webapp_post_confirmation_lambda_function_arn" {
+  description = "ARN of the Lambda function"
+  value       = aws_lambda_function.webapp_post_confirmation.arn
+}
+
+output "post_confirmation_lambda_function_name" {
+  description = "Name of the Lambda function"
+  value       = aws_lambda_function.webapp_post_confirmation.function_name
+}
+
+output "post_confirmation_lambda_role_arn" {
+  description = "ARN of the Lambda IAM role"
+  value       = aws_iam_role.webapp_post_confirmation_role.arn
+}
+
+output "lpost_confirmation_lambda_log_group_name" {
+  description = "Name of the CloudWatch log group"
+  value       = aws_cloudwatch_log_group.lambda_post_confirmation_logs.name
+}
+
 output "webapp_messaging_stream_lambda_function_arn" {
   description = "ARN of the Lambda function"
   value       = aws_lambda_function.webapp_messaging_stream.arn
@@ -259,24 +305,4 @@ output "messaging_stream_lambda_role_arn" {
 output "messaging_stream_lambda_log_group_name" {
   description = "Name of the CloudWatch log group"
   value       = aws_cloudwatch_log_group.webapp_messaging_stream_logs.name
-}
-
-# Layers
-
-data "archive_file" "psycopg2_layer_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/layers/psycopg2"
-  output_path = "${path.module}/layers/psycopg2.zip"
-}
-
-resource "aws_lambda_layer_version" "psycopg2" {
-  filename            = data.archive_file.psycopg2_layer_zip.output_path
-  layer_name          = "psycopg2-python312-layer"
-  description         = "Psycopg2 binary for Python 3.12 (Amazon Linux 2023)"
-  
-  source_code_hash    = data.archive_file.psycopg2_layer_zip.output_base64sha256
-
-  compatible_runtimes = ["python3.12"]
-  
-  compatible_architectures = ["x86_64"]
 }
