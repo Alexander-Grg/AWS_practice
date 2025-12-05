@@ -13,6 +13,12 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
+# Main .env file for the local environment
+data "dotenv" "main" {
+  filename = "../.env"
+}
+
+
 # Create ZIP file for Lambda deployment
 data "archive_file" "lambda_post_confirmation_lambda_zip" {
   type        = "zip"
