@@ -13,8 +13,8 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
-# Main .env file for the local environment
 data "dotenv" "main" {
+  count    = var.is_codespaces ? 0 : 1  # Only load .env file locally, not in Codespaces
   filename = "../.env"
 }
 

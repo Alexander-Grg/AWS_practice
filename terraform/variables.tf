@@ -31,6 +31,13 @@ variable "ip_range" {
   description = "A range of codespaces ips"
   type = string
   sensitive = true
+
+}
+
+variable "is_codespaces" {
+  type        = bool
+  default     = false
+  description = "Set to true if running in GitHub Codespaces environment"
 }
 
 # Lambda function post-confirmation
