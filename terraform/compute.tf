@@ -185,7 +185,7 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
 
   vpc_config {
     subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
-    security_group_ids = [aws_security_group.default_sg.id]
+    security_group_ids = [aws_security_group.ssh_only.id]
   }
 
   ephemeral_storage {
@@ -241,7 +241,7 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
 
   vpc_config {
     subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
-    security_group_ids = [aws_security_group.default_sg.id]
+    security_group_ids = [aws_security_group.ssh_only.id]
   }
 
   ephemeral_storage {

@@ -1,98 +1,109 @@
-# Security Group 1: launch-wizard-1
-resource "aws_security_group" "launch_wizard_1" {
-  name        = "launch-wizard-1"
-  description = "launch-wizard-1 created 2025-08-04T06:06:16.489Z"
-  vpc_id      = aws_vpc.main.id
+# # Security Group 1: default
+# resource "aws_security_group" "default_sg" {
+#   name        = "webapp-main-sg"
+#   description = "default VPC security group"
+#   vpc_id      = aws_vpc.main.id
 
-  # Inbound Rules
+#   # Inbound Rules
+#   ingress {
+#     description = "HTTP access"
+#     from_port   = 80
+#     to_port     = 80
+#     protocol    = "tcp"
+#     cidr_blocks = [var.allowed_ip]
+#   }
+
+#   ingress {
+#     description = "PostgreSQL access for the localhost"
+#     from_port   = 5432
+#     to_port     = 5432
+#     protocol    = "tcp"
+#     cidr_blocks = [var.allowed_ip]
+#   }
+
+#   ingress {
+#     description     = "PostgreSQL access for Fargate backend service"
+#     from_port       = 5432
+#     to_port         = 5432
+#     protocol        = "tcp"
+#     security_groups = [aws_security_group.post_srv_sg.id]
+#   }
+
+#   ingress {
+#     description = "SSH access"
+#     from_port   = 22
+#     to_port     = 22
+#     protocol    = "tcp"
+#     cidr_blocks = [var.allowed_ip]
+#   }
+
+#   # ingress {
+#   #   description = "ICMPv6 access"
+#   #   from_port   = -1
+#   #   to_port     = -1
+#   #   protocol    = "icmpv6"
+#   #   cidr_blocks = [var.icmpv6_ip]
+#   # }
+
+#   # Outbound Rules
+#   egress {
+#     description = "All outbound traffic"
+#     from_port   = 0
+#     to_port     = 0
+#     protocol    = "-1"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   tags = {
+#     Name        = "default"
+#     Environment = "production"
+#     ManagedBy   = "terraform"
+#   }
+# }
+
+resource "aws_security_group" "ssh_only" {
+  name        = "ssh-only-sg"
+  description = "Allow SSH only from trusted sources"
+  vpc_id      = aws_vpc.main.id
+  
   ingress {
-    description = "SSH access"
+    description = "SSH from current IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.allowed_ip]
+    cidr_blocks = ["${chomp(data.http.current_ip.response_body)}/32"]
   }
-
-  # Outbound Rules
+  
+  ingress {
+    description = "SSH from GitHub Codespaces"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["140.82.112.0/20"]
+  }
+  
+  ingress {
+    description = "SSH from local ISP"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["171.225.184.0/22"]
+  }
+  
   egress {
-    description = "All outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+  
   tags = {
-    Name        = "launch-wizard-1"
-    Environment = "production"
-    ManagedBy   = "terraform"
+    Name = "ssh-only-sg"
   }
 }
 
-# Security Group 2: default
-resource "aws_security_group" "default_sg" {
-  name        = "webapp-main-sg"
-  description = "default VPC security group"
-  vpc_id      = aws_vpc.main.id
 
-  # Inbound Rules
-  ingress {
-    description = "HTTP access"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ip]
-  }
-
-  ingress {
-    description = "PostgreSQL access for the localhost"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ip]
-  }
-
-  ingress {
-    description     = "PostgreSQL access for Fargate backend service"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.post_srv_sg.id]
-  }
-
-  ingress {
-    description = "SSH access"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ip]
-  }
-
-  # ingress {
-  #   description = "ICMPv6 access"
-  #   from_port   = -1
-  #   to_port     = -1
-  #   protocol    = "icmpv6"
-  #   cidr_blocks = [var.icmpv6_ip]
-  # }
-
-  # Outbound Rules
-  egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "default"
-    Environment = "production"
-    ManagedBy   = "terraform"
-  }
-}
-
-# Security Group 3: post-srv-sg
+# Security Group 2: security group for ECS services
 resource "aws_security_group" "post_srv_sg" {
   name        = "post-srv-sg"
   description = "Security group for Webapp services on ECS"
@@ -129,19 +140,14 @@ resource "aws_security_group_rule" "ingress_self_reference" {
   from_port                = 0
   to_port                  = 65535
   protocol                 = "-1" # Or "tcp" if you want to be specific
-  security_group_id        = aws_security_group.default_sg.id
-  source_security_group_id = aws_security_group.default_sg.id
+  security_group_id        = aws_security_group.ssh_only.id
+  source_security_group_id = aws_security_group.ssh_only.id
 }
 
 # Outputs for reference
-output "launch_wizard_1_sg_id" {
-  description = "ID of the launch-wizard-1 security group"
-  value       = aws_security_group.launch_wizard_1.id
-}
-
 output "default_sg_id" {
   description = "ID of the default security group"
-  value       = aws_security_group.default_sg.id
+  value       = aws_security_group.ssh_only.id
 }
 
 output "post_srv_sg_id" {

@@ -18,7 +18,7 @@ resource "aws_db_instance" "webapp_rds_instance" {
   storage_encrypted = true
 
   # Network & Security
-  vpc_security_group_ids = [aws_security_group.default_sg.id]
+  vpc_security_group_ids = [aws_security_group.ssh_only.id]
   db_subnet_group_name   = aws_db_subnet_group.webapp_db_subnet_group.name
   availability_zone      = "ap-southeast-2a"
   publicly_accessible    = true
