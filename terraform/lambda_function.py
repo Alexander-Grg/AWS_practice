@@ -15,8 +15,6 @@ def lambda_handler(event, context):
     response = table.query(
         KeyConditionExpression=Key('message_group_uuid').eq(message_group_uuid)
     )
-    
-    # Return the items
     return {
         'statusCode': 200,
         'body': json.dumps(response['Items'])

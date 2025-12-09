@@ -1,4 +1,12 @@
 #!/bin/bash
+# Launch this script from the Terraform directory
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    echo "⚠️  ERROR: This script must be sourced."
+    echo "Usage: . ${0}  (or source ${0})"
+    exit 1
+fi
+
 if [ -n "$CODESPACES" ] || [ -n "$GITHUB_CODESPACE_TOKEN" ]; then
     echo "Detected Codespaces environment"
     export TF_VAR_is_codespaces=true

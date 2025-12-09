@@ -1,6 +1,9 @@
 resource "aws_instance" "app_server" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t3.micro"
+  subnet_id     = aws_subnet.subnet_2a.id
+ 
+  vpc_security_group_ids = [aws_security_group.ssh_only.id]
 
   tags = {
     Name = "AWS_PRACTICE"
