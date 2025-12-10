@@ -1,0 +1,68 @@
+---
+- name: Basic configuration
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Update apt cache (on Debian-based systems)
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Update yum cache (on RedHat-based systems)
+      yum:
+        update_cache: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Install Git for Debian-based systems
+      apt:
+        name: git
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Install Git for RedHat-based systems
+      yum:
+        name: git
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Install common packages
+      package:
+        name:
+          - curl
+          - wget
+          - vim
+          - htop
+          - tree
+        state: present
+
+    - name: Create Ansible user with sudo privileges and key access only
+      user:
+        name: ansible
+        groups: sudo
+        shell: /bin/bash
+        system: no
+        create_home: yes
+        state: present
+
+    - name: Set up authorized key for Ansible user
+      file:
+        path: /home/ansible/.ssh
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0700'
+
+    - name: Copy authorized key to Ansible user
+      authorized_key:
+        user: ansible
+        key: "{{ lookup('file', '~/.ssh/id_Ansible_ssh.pub') }}"
+        state: present
+
+    - name: Show disk space
+      command: df -h
+      register: disk_space
+
+    - name: Display disk space output
+      debug:
+        msg: "{{ disk_space.stdout_lines }}"

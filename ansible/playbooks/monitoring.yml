@@ -1,0 +1,62 @@
+---
+- name: System Monitoring Setup
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+      - name: Install monitoring packages
+        package:
+          name:
+            - net-tools
+            - sysstat
+            - dstat
+            - iotop
+          state: present
+
+      - name: Configure logrotate for web server
+        copy:
+          content: |
+              /var/log/nginx/*.log {
+                daily
+                missingok
+                rotate 14
+                compress
+                delaycompress
+                notifempty
+                create 0640 www-data adm
+                sharedscripts
+                postrotate
+                    [ -f /var/run/nginx.pid ] && kill -USR1 `cat /var/run/nginx.pid`
+                endscript
+              }
+          dest: /etc/logrotate.d/nginx
+        when: ansible_distribution == "Ubuntu"
+
+      - name: Create system check script
+        copy:
+          content: |
+              #!/bin/bash
+              echo "CPU Usage:"
+              mpstat
+              echo ""
+              echo "Memory Usage:"
+              free -h
+              echo ""
+              echo "Disk Usage:"
+              df -h
+              echo ""
+              echo "Top 5 processes by CPU usage:"
+              ps aux --sort=-%cpu | head -n 6
+          dest: /usr/local/bin/system_check.sh
+          mode: '0755'
+
+      - name: Dynamic MOTD
+        copy:
+          content: |
+              Welcome to {{ inventory_hostname }}
+              Distribution: {{ ansible_distribution }} {{ ansible_distribution_version }}
+              Kernel: {{ ansible_kernel }}
+              CPU Cores: {{ ansible_processor_cores }}
+              Memory: {{ ansible_memtotal_mb }} MB
+          dest: /etc/motd
+          mode: '0755'

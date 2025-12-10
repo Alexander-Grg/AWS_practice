@@ -430,3 +430,8 @@ output "user_pool_id" {
 output "client_id" {
   value = aws_cognito_user_pool_client.client.id
 }
+
+resource "aws_key_pair" "ansible_key" {
+  key_name   = "ansible-key"
+  public_key = file("~/.ssh/id_Ansible_ssh.pub")
+}
