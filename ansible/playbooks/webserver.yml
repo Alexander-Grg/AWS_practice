@@ -7,46 +7,46 @@
     web_user: "{{ 'www-data' if ansible_os_family == 'Debian' else 'apache' }}"
   tasks:
     - name: Install Nginx (Ubuntu)
-      apt:
+      ansible.builtin.apt:
        name: nginx
        state: present
       when: ansible_os_family == "Debian"
 
     - name: Install Apache (Amazon Linux)
-      yum:
+      ansible.builtin.yum:
         name: httpd
         state: present
       when: ansible_os_family == "Amazon"
 
     - name: Create a web root directory
-      file:
+      ansible.builtin.file:
         path: /var/www/html
         state: directory
         owner: "{{ web_user }}"
         mode: '0755'
     
     - name: Deploy a sample index.html
-      template:
+      ansible.builtin.template:
         src: ../files/index.html
         dest: /var/www/html/index.html
         owner: "{{ web_user }}"
         mode: '0644'
 
     - name: Start and enable web service
-      service:
+      ansible.builtin.service:
         name: "{{'nginx' if ansible_os_family == 'Debian' else 'httpd'}}"
         state: started
         enabled: true
 
     - name: Open HTTP port in firewall (Ubuntu)
-      ufw:
+      ansible.builtin.ufw:
         rule: allow
         port: '80'
         proto: tcp
       when: ansible_os_family == "Debian"
 
     - name: Open HTTP port in firewall (Amazon Linux)
-      firewalld:
+      ansible.builtin.firewalld:
         port: 80/tcp
         permanent: true
         state: enabled

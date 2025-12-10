@@ -5,7 +5,7 @@
   gather_facts: true
   tasks:
       - name: Install monitoring packages
-        package:
+        ansible.builtin.package:
           name:
             - net-tools
             - sysstat
@@ -14,7 +14,7 @@
           state: present
 
       - name: Configure logrotate for web server
-        copy:
+        ansible.builtin.copy:
           content: |
               /var/log/nginx/*.log {
                 daily
@@ -33,7 +33,7 @@
         when: ansible_distribution == "Ubuntu"
 
       - name: Create system check script
-        copy:
+        ansible.builtin.copy:
           content: |
               #!/bin/bash
               echo "CPU Usage:"
@@ -51,7 +51,7 @@
           mode: '0755'
 
       - name: Dynamic MOTD
-        copy:
+        ansible.builtin.copy:
           content: |
               Welcome to {{ inventory_hostname }}
               Distribution: {{ ansible_distribution }} {{ ansible_distribution_version }}

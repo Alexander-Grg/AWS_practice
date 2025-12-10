@@ -5,29 +5,29 @@
   gather_facts: true
   tasks:
     - name: Update apt cache (on Debian-based systems)
-      apt:
+      ansible.builtin.apt:
         update_cache: yes
       when: ansible_os_family == "Debian"
 
     - name: Update yum cache (on RedHat-based systems)
-      yum:
+      ansible.builtin.yum:
         update_cache: yes
       when: ansible_os_family == "RedHat"
 
     - name: Install Git for Debian-based systems
-      apt:
+      ansible.builtin.apt:
         name: git
         state: present
       when: ansible_os_family == "Debian"
 
     - name: Install Git for RedHat-based systems
-      yum:
+      ansible.builtin.yum:
         name: git
         state: present
       when: ansible_os_family == "RedHat"
 
     - name: Install common packages
-      package:
+      ansible.builtin.package:
         name:
           - curl
           - wget
@@ -37,7 +37,7 @@
         state: present
 
     - name: Create Ansible user with sudo privileges and key access only
-      user:
+      ansible.builtin.user:
         name: ansible
         groups: sudo
         shell: /bin/bash
@@ -46,7 +46,7 @@
         state: present
 
     - name: Set up authorized key for Ansible user
-      file:
+      ansible.builtin.file:
         path: /home/ansible/.ssh
         state: directory
         owner: ansible
@@ -54,15 +54,15 @@
         mode: '0700'
 
     - name: Copy authorized key to Ansible user
-      authorized_key:
+      ansible.builtin.authorized_key:
         user: ansible
         key: "{{ lookup('file', '~/.ssh/id_Ansible_ssh.pub') }}"
         state: present
 
     - name: Show disk space
-      command: df -h
+      ansible.builtin.command: df -h
       register: disk_space
 
     - name: Display disk space output
-      debug:
+      ansible.builtin.debug:
         msg: "{{ disk_space.stdout_lines }}"
