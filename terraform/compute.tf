@@ -194,7 +194,7 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
   function_name    = var.function_name_lambda_post_confirmation
   role             = aws_iam_role.webapp_post_confirmation_role.arn
   handler          = local.post_confirmation_handler
-  runtime          = "python3.10"
+  runtime          = "python3.12"
   timeout          = 10
   memory_size      = 128
   architectures    = ["x86_64"]
@@ -209,7 +209,7 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
 
   vpc_config {
     subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
-    security_group_ids = [aws_security_group.ssh_only.id]
+    security_group_ids = [aws_security_group.lambda_sg.id]
   }
 
   ephemeral_storage {

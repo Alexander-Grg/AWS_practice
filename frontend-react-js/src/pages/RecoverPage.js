@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import { Auth } from 'aws-amplify';
 
 export default function RecoverPage() {
-  // Username is Eamil
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [passwordAgain, setPasswordAgain] = React.useState('');
@@ -109,7 +108,7 @@ export default function RecoverPage() {
           />
         </div>
       </div>
-      {errors}
+      {el_errors}
       <div className='submit'>
         <button type='submit'>Reset Password</button>
       </div>
@@ -118,9 +117,10 @@ export default function RecoverPage() {
   }
 
   const success = () => {
-    return (<form>
+    return (
+        <form className="recover-success">
       <p>Your password has been successfully reset!</p>
-      <Link to="/signin" className="proceed">Proceed to Signin</Link>
+      <Link to="/signin" className="proceed">Proceed to Sign in</Link>
     </form>
     )
     }

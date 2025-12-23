@@ -105,3 +105,15 @@ article.signin-article button[type='submit'] {
   text-decoration: none;
   font-weight: 600;
 }
+
+.errors {
+  color: #ff5b5b;
+  background-color: #460000;
+  border: 1px solid #ff5b5b;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px; 
+  text-align: center;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+}

@@ -77,7 +77,6 @@ output "db_connection_string" {
   sensitive   = true
 }
 
-
 # DynamoDB Table - webapp-messages
 resource "aws_dynamodb_table" "webapp_messages" {
   name           = "webapp-messages"

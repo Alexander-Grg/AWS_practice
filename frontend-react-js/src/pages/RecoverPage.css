@@ -20,7 +20,9 @@ article.recover-article .recover-wrapper {
   border-radius: 12px;
   display: flex;
   flex-direction: column;
+  margin-top: 24px;
 }
+
 article.recover-article form {
   padding: 48px;
   flex-grow: 1;
@@ -29,7 +31,7 @@ article.recover-article form {
 article.recover-article label {
   padding: 4px 0px;
   display: block;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 article.recover-article input[type='text'],
@@ -40,38 +42,38 @@ article.recover-article input[type='password'] {
   border: none;
   outline: none;
   display: block;
-  outline: none;
   resize: none;
   width: 100%;
   padding: 16px;
   border: solid 1px #555555;
   background: #1f1f1f;
-  color: #fff;
+  color: #ffffff;
 }
 
-.field.password {
+.field.password,
+.field.password_again {
   margin-top: 16px;
 }
 
-article.recover-article input[type='text']:focus ,
+article.recover-article input[type='text']:focus,
 article.recover-article input[type='password']:focus {
-  border: solid 1px rgb(149,0,255,1);
+  border: solid 1px rgb(149, 0, 255);
 }
 
+/* Submit row */
 article.recover-article .submit {
   margin-top: 24px;
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
 }
 
-article.recover-article  h2 {
+article.recover-article h2 {
   text-align: center;
-  color: #fff;
+  color: #ffffff;
+  margin-bottom: 24px;
 }
-
-
 
 article.recover-article button[type='submit'] {
   font-weight: 800;
@@ -80,6 +82,51 @@ article.recover-article button[type='submit'] {
   border-radius: 6px;
   padding: 18px 28px;
   font-size: 16px;
-  background: rgba(149,0,255,1);
-  color: #fff;
+  background: rgba(149, 0, 255, 1);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+article.recover-article button[type='submit']:hover {
+  background: rgba(120, 0, 220, 1);
+}
+
+.errors {
+  color: #ffb3b3;
+  background-color: #3a0000;
+  border: 1px solid #ff5b5b;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 600;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+article.recover-article .recover-wrapper form.recover-success {
+  background: #ffffff;
+  color: #1a1a1a;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.recover-success p {
+  font-size: 18px;
+  margin-bottom: 24px;
+  color: #2d2d2d;
+}
+
+.recover-success .proceed {
+  display: inline-block;
+  padding: 14px 24px;
+  background: rgba(149, 0, 255, 1);
+  color: #ffffff;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 700;
+  transition: background 0.2s ease;
+}
+
+.recover-success .proceed:hover {
+  background: rgba(120, 0, 220, 1);
 }
