@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# docker-compose exec backend-flask python3 -m bin.ddb.schema-load
 
 import boto3
 import sys

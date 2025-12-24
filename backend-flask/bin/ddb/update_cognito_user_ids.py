@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # --Command to run the script--
-# docker-compose exec backend-flask python3 -m bin.db.update_cognito_user_ids
+# docker-compose exec backend-flask python3 -m bin.ddb.update_cognito_user_ids
 
 import boto3
 import os

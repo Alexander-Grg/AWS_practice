@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# docker-compose exec backend-flask python3 -m bin.ddb.put_message
 import boto3
 import sys
 from datetime import datetime, timedelta, timezone

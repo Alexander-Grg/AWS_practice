@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# docker-compose exec backend-flask python3 -m bin.ddb.list_conversation
 import boto3
 import sys
 import json

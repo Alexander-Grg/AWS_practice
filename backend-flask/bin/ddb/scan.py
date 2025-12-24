@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# docker-compose exec backend-flask python3 -m bin.ddb.scan
 import boto3
 import os
 
