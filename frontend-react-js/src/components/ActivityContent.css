@@ -65,3 +65,7 @@
   font-size: 16px;
   margin-top: 8px;
 }
+
+.activity_content_wrap {
+  cursor: pointer;
+}

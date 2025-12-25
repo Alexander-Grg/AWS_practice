@@ -35,7 +35,7 @@ export default function DesktopNavigationLink(props) {
   }
 
   return (
-    <Link to={props.url} className={classes()} href="#">
+    <Link to={props.url} className={classes()}>
       {icon()}
       <span>{props.name}</span>
     </Link>

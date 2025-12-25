@@ -2,15 +2,15 @@ import './ActivityShowPage.css';
 import React from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 
-import DesktopNavigation  from 'components/DesktopNavigation';
-import DesktopSidebar     from 'components/DesktopSidebar';
-import ActivityForm from 'components/ActivityForm';
-import ReplyForm from 'components/ReplyForm';
-import Replies from 'components/Replies';
-import ActivityShowItem from 'components/ActivityShowItem'
+import DesktopNavigation  from '../components/DesktopNavigation';
+import DesktopSidebar     from '../components/DesktopSidebar';
+import ActivityForm from '../components/ActivityForm';
+import ReplyForm from '../components/ReplyForm';
+import Replies from '../components/Replies';
+import ActivityShowItem from '../components/ActivityShowItem'
 
-import {get} from 'lib/Requests';
-import {checkAuth} from 'lib/CheckAuth';
+import {get} from '../lib/Requests';
+import {checkAuth} from '../lib/CheckAuth';
 
 export default function ActivityShowPage() {
   const [activity, setActivity] = React.useState(null);
@@ -22,24 +22,31 @@ export default function ActivityShowPage() {
   const dataFetchedRef = React.useRef(false);
   const params = useParams();
 
-	const navigate = useNavigate();
-	const goBack = () => {
-		navigate(-1);
-	}
+  const navigate = useNavigate();
+  const goBack = () => {
+    navigate(-1);
+  }
 
   const loadData = async () => {
-    const url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/@${params.handle}/status/${params.activity_uuid}`
+    const clean_handle = params.handle.startsWith('@') ? params.handle.substring(1) : params.handle;
+
+    const url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/${params.activity_uuid}`
+    
     get(url,{
       auth: false,
       success: function(data){
-        setActivity(data.activity)
-        setReplies(data.replies)
+        if (data.activity) {
+          setActivity(data.activity);
+          setReplies(data.replies || []);
+        } else {
+          setActivity(data);
+          setReplies([]);
+        }
       }
     })
   }
   
   React.useEffect(()=>{
-    //prevents double call
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
 
@@ -75,7 +82,7 @@ export default function ActivityShowPage() {
         />
         <div className='activity_feed'>
           <div className='activity_feed_heading flex'>
-          <div className="back" onClick={goBack}>&larr;</div>	
+          <div className="back" onClick={goBack}>&larr;</div> 
             <div className='title'>Crud</div>
           </div>
           {el_activity}

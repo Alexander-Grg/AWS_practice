@@ -6,7 +6,7 @@ import DesktopNavigation  from '../components/DesktopNavigation';
 import DesktopSidebar     from '../components/DesktopSidebar';
 import ActivityFeed from '../components/ActivityFeed';
 import ActivityForm from '../components/ActivityForm';
-import Cookies from 'js-cookie'
+import checkAuth from '../lib/CheckAuth'; 
 
 export default function UserFeedPage() {
   const [activities, setActivities] = React.useState([]);
@@ -15,11 +15,14 @@ export default function UserFeedPage() {
   const dataFetchedRef = React.useRef(false);
 
   const params = useParams();
-  const title = `@${params.handle}`;
 
-  const loadData = async () => {
+  const title = params.handle.startsWith('@') ? params.handle : `@${params.handle}`;
+
+const loadData = async () => {
     try {
-      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/${title}`
+      const clean_handle = params.handle.startsWith('@') ? params.handle.substring(1) : params.handle;
+      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/${clean_handle}`
+      
       const res = await fetch(backend_url, {
         method: "GET"
       });
@@ -34,24 +37,12 @@ export default function UserFeedPage() {
     }
   };
 
-  const checkAuth = async () => {
-    console.log('checkAuth')
-    // [TODO] Authenication
-    if (Cookies.get('user.logged_in')) {
-      setUser({
-        display_name: Cookies.get('user.name'),
-        handle: Cookies.get('user.username')
-      })
-    }
-  };
-
   React.useEffect(()=>{
-    //prevents double call
     if (dataFetchedRef.current) return;
     dataFetchedRef.current = true;
 
     loadData();
-    checkAuth();
+    checkAuth(setUser);
   }, [])
 
   return (

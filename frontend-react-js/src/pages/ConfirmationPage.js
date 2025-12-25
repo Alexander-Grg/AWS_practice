@@ -1,9 +1,8 @@
 import './ConfirmationPage.css';
 import React from "react";
-import { useParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {ReactComponent as Logo} from '../components/svg/logo.svg';
-
-// [TODO] Authenication
+import { useNavigate } from 'react-router-dom';
 import { Auth } from 'aws-amplify';
 
 export default function ConfirmationPage() {
@@ -11,12 +10,14 @@ export default function ConfirmationPage() {
   const [code, setCode] = React.useState('');
   const [errors, setErrors] = React.useState('');
   const [codeSent, setCodeSent] = React.useState(false);
-
-  const params = useParams();
+  const location = useLocation();
 
   const code_onchange = (event) => {
     setCode(event.target.value);
   }
+
+  const navigate = useNavigate();
+
   const email_onchange = (event) => {
     setEmail(event.target.value);
   }
@@ -28,9 +29,6 @@ export default function ConfirmationPage() {
       console.log('code resent successfully');
       setCodeSent(true)
     } catch (err) {
-      // does not return a code
-      // does cognito always return english
-      // for this to be an okay match?
       console.log(err)
       if (err.message === 'Username cannot be empty'){
         setErrors("You need to provide an email in order to send Resend Activiation Code")   
@@ -40,23 +38,24 @@ export default function ConfirmationPage() {
     }
   }
 
-  const onsubmit = async (event) => {
-    event.preventDefault();
-    setErrors('')
-    try {
-      await Auth.confirmSignUp(email, code);
-      window.location.href = "/"
-    } catch (error) {
-      setErrors(error.message)
-    }
-    return false
+const onsubmit = async (event) => {
+  event.preventDefault();
+  setErrors('');
+  try {
+    await Auth.confirmSignUp(email, code);
+    
+    navigate(`/signin?email=${encodeURIComponent(email)}`);
+    
+  } catch (error) {
+    setErrors(error.message);
   }
+  return false;
+}
 
   let el_errors;
   if (errors){
     el_errors = <div className='errors'>{errors}</div>;
   }
-
 
   let code_button;
   if (codeSent){
@@ -66,10 +65,12 @@ export default function ConfirmationPage() {
   }
 
   React.useEffect(()=>{
-    if (params.email) {
-      setEmail(params.email)
+    const query = new URLSearchParams(location.search);
+    const emailParam = query.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
     }
-  }, [])
+  }, [location.search]);
 
   return (
     <article className="confirm-article">
@@ -88,7 +89,8 @@ export default function ConfirmationPage() {
               <input
                 type="text"
                 value={email}
-                onChange={email_onchange} 
+                onChange={email_onchange}
+                disabled={true} 
               />
             </div>
             <div className='field text_field code'>
