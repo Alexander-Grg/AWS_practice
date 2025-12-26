@@ -31,11 +31,13 @@ export default function DesktopNavigationLink(props) {
       case 'messages':
         return <MessagesIcon className='icon' />
         break;
+      default: 
+        break;
     }
   }
 
   return (
-    <Link to={props.url} className={classes()}>
+    <Link to={props.url} className={classes()} href="#">
       {icon()}
       <span>{props.name}</span>
     </Link>

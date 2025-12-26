@@ -8,19 +8,30 @@ import { Auth } from 'aws-amplify';
 
 export default function SignupPage() {
 
-  // Username is Eamil
   const [name, setName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
   const [errors, setErrors] = React.useState('');
 
   const onsubmit = async (event) => {
     event.preventDefault();
     setErrors('')
-    console.log('username',username)
-    console.log('email',email)
-    console.log('name',name)
+    
+    if (password !== confirmPassword) {
+      setErrors('Passwords do not match');
+      return false;
+    }
+
+    if (password.length < 8) {
+      setErrors('Password must be at least 8 characters long');
+      return false;
+    }
+    
+    console.log('username',username);
+    console.log('email',email);
+    console.log('name',name);
     try {
       const { user } = await Auth.signUp({
         username: email,
@@ -30,7 +41,7 @@ export default function SignupPage() {
           email: email,
           preferred_username: username,
         },
-        autoSignIn: { // optional - enables auto sign in after user is confirmed
+        autoSignIn: { 
           enabled: true,
         }
       });
@@ -54,6 +65,9 @@ export default function SignupPage() {
   }
   const password_onchange = (event) => {
     setPassword(event.target.value);
+  }
+  const confirm_password_onchange = (event) => {
+    setConfirmPassword(event.target.value);
   }
 
   let el_errors;
@@ -106,6 +120,15 @@ export default function SignupPage() {
                 type="password"
                 value={password}
                 onChange={password_onchange} 
+              />
+            </div>
+
+            <div className='field text_field password'>
+              <label>Confirm Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={confirm_password_onchange} 
               />
             </div>
           </div>

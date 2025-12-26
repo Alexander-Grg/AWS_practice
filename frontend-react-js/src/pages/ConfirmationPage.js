@@ -1,8 +1,7 @@
 import './ConfirmationPage.css';
 import React from "react";
-import { useLocation } from 'react-router-dom';
-import {ReactComponent as Logo} from '../components/svg/logo.svg';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ReactComponent as Logo } from '../components/svg/logo.svg';
 import { Auth } from 'aws-amplify';
 
 export default function ConfirmationPage() {
@@ -10,47 +9,58 @@ export default function ConfirmationPage() {
   const [code, setCode] = React.useState('');
   const [errors, setErrors] = React.useState('');
   const [codeSent, setCodeSent] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false); // 1. Add loading state
+
   const location = useLocation();
+  const navigate = useNavigate();
 
   const code_onchange = (event) => {
     setCode(event.target.value);
   }
-
-  const navigate = useNavigate();
 
   const email_onchange = (event) => {
     setEmail(event.target.value);
   }
 
   const resend_code = async (event) => {
-    setErrors('')
+    setErrors('');
     try {
       await Auth.resendSignUp(email);
       console.log('code resent successfully');
-      setCodeSent(true)
+      setCodeSent(true);
     } catch (err) {
-      console.log(err)
+      console.log(err);
       if (err.message === 'Username cannot be empty'){
-        setErrors("You need to provide an email in order to send Resend Activiation Code")   
+        setErrors("You need to provide an email in order to send Resend Activation Code");
       } else if (err.message === "Username/client id combination not found."){
-        setErrors("Email is invalid or cannot be found.")   
+        setErrors("Email is invalid or cannot be found.");
       }
     }
   }
 
-const onsubmit = async (event) => {
-  event.preventDefault();
-  setErrors('');
-  try {
-    await Auth.confirmSignUp(email, code);
-    
-    navigate(`/signin?email=${encodeURIComponent(email)}`);
-    
-  } catch (error) {
-    setErrors(error.message);
+  const onsubmit = async (event) => {
+    event.preventDefault();
+    setErrors('');
+    setIsLoading(true); // 2. Start loading
+
+    try {
+      await Auth.confirmSignUp(email, code);
+      // If successful, redirect
+      navigate(`/signin?email=${encodeURIComponent(email)}`);
+    } catch (error) {
+      console.log(error);
+      
+      // 3. Handle "User is already confirmed" gracefully
+      // This happens if the first request succeeded on backend but timed out on frontend
+      if (error.message === 'User cannot be confirmed. Current status is CONFIRMED') {
+          navigate(`/signin?email=${encodeURIComponent(email)}`);
+          return;
+      }
+
+      setErrors(error.message);
+      setIsLoading(false); // Stop loading only if we are truly stuck
+    }
   }
-  return false;
-}
 
   let el_errors;
   if (errors){
@@ -104,7 +114,10 @@ const onsubmit = async (event) => {
           </div>
           {el_errors}
           <div className='submit'>
-            <button type='submit'>Confirm Email</button>
+            {/* 4. Disable button while loading */}
+            <button type='submit' disabled={isLoading}>
+                {isLoading ? 'Processing...' : 'Confirm Email'}
+            </button>
           </div>
         </form>
       </div>

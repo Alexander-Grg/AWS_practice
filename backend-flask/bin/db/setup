@@ -4,19 +4,12 @@ set -e
 echo "==== db-setup"
 
 # Load Environment Variables
-if [ -f ".env" ]; then
-    echo "Loading .env variables..."
-    set -a
-    source .env
-    set +a
-else
-    echo "ERROR: .env file not found."
-    exit 1
-fi
-
-if [ -z "$CONNECTION_STRING" ]; then
-    export CONNECTION_STRING=$CONNECTION_URL
-fi
+    if [ -f .env ]; then
+        echo "Loading .env variables..."
+        set -a      
+        source .env
+        set +a 
+    fi
 
 bin_path="backend-flask/bin"
 

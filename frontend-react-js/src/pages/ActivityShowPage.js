@@ -28,8 +28,6 @@ export default function ActivityShowPage() {
   }
 
   const loadData = async () => {
-    const clean_handle = params.handle.startsWith('@') ? params.handle.substring(1) : params.handle;
-
     const url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/${params.activity_uuid}`
     
     get(url,{

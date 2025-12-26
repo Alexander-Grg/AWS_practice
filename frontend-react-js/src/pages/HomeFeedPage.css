@@ -1,5 +1,89 @@
+/* HomeFeedPage.css */
 article {
   display: flex;
   flex-direction: row;
   justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  gap: 20px;
+}
+
+article .content {
+  flex: 1;
+  max-width: 600px;
+  padding: 20px 0;
+  box-sizing: border-box;
+}
+
+.activity_feed {
+  background-color: black;
+  height: auto;
+  min-height: 100vh;  
+}
+
+.activity_feed_heading {
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.activity_feed_heading .title {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.activity_feed .activity_content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.activity_feed img,
+.activity_feed video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.ActivityForm,
+.ReplyForm {
+  max-width: 600px;
+  width: 100%;
+}
+
+.DesktopSidebar {
+  width: 300px;
+  padding: 20px 0;
+  box-sizing: border-box;
+  position: sticky;
+  top: 20px;
+  height: fit-content;
+}
+
+@media (max-width: 1000px) {
+  article {
+    flex-direction: column;
+    align-items: center;
+    max-width: 100%;
+    gap: 0;
+  }
+  
+  article .content {
+    max-width: 100%;
+    width: 100%;
+    padding: 20px;
+  }
+  
+  .DesktopSidebar {
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+    position: static;
+  }
+}
+
+body {
+  overflow-x: hidden;
 }
