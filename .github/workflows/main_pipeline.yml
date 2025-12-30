@@ -11,7 +11,7 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     env:
       AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
@@ -33,10 +33,10 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Docker
+
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -44,26 +44,41 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
-      
+
+      - name: Build services
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: my-app:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
       - name: Start services
         run: |
-          docker-compose up -d --build
+          docker compose up -d
           sleep 10
-          docker-compose ps
-      
+          docker compose ps
+
       - name: Run backend tests
         run: |
-          docker-compose exec -T backend-flask python -m pytest || echo "No tests found"
-      
+          docker compose exec -T backend-flask python -m pytest || echo "No tests found"
+
       - name: Run frontend tests
         run: |
-          docker-compose exec -T frontend-react-js npm test || echo "No tests found"
-      
+          docker compose exec -T frontend-react-js npm test || echo "No tests found"
+
       - name: Health check
         run: |
           curl -f http://localhost:4567/health || echo "Backend health check failed"
           curl -f http://localhost:3000 || echo "Frontend health check failed"
-      
+
       - name: Cleanup
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
