@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -50,7 +50,7 @@ jobs:
 
       - name: Run frontend tests
         run: |
-          docker compose exec -T frontend-react-js npm test || echo "No tests found"
+          docker compose exec -T -e CI=true frontend-react-js npm test || echo "No tests found"
 
       - name: Health check
         run: |
