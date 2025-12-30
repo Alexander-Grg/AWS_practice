@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+
 env:
   NODE_ENV: test
   DOCKER_BUILDKIT: 1
@@ -30,39 +31,16 @@ jobs:
       REACT_APP_AWS_COGNITO_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
       REACT_APP_CLIENT_ID: ${{ secrets.AWS_COGNITO_USER_POOL_CLIENT_ID }}
       REACT_APP_AWS_USER_POOLS_ID: ${{ secrets.AWS_COGNITO_USER_POOL_ID }}
-    
+
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      - name: Build services
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          load: true
-          tags: my-app:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-
-      - name: Move cache
+      - name: Start services (Build & Run)
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Start services
-        run: |
-          docker compose up -d
+          docker compose up -d --build
           sleep 10
           docker compose ps
 
