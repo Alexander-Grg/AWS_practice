@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import HomeFeedPage from '../HomeFeedPage';
+import HomeFeedPage from '../pages/HomeFeedPage';
 import { get } from '../lib/Requests';
 import { checkAuth } from '../lib/CheckAuth';
 
