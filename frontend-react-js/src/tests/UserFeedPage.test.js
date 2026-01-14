@@ -1,20 +1,20 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom'; // Use MemoryRouter for params
 import UserFeedPage from '../UserFeedPage';
-import { checkAuth } from '../../lib/CheckAuth';
+import { checkAuth } from '../lib/CheckAuth';
 
 // Mock Fetch specifically for this file
 global.fetch = jest.fn();
-jest.mock('../../lib/CheckAuth');
+jest.mock('../lib/CheckAuth');
 
 // Mock children
-jest.mock('../../components/DesktopNavigation', () => () => <div>Nav</div>);
-jest.mock('../../components/DesktopSidebar', () => () => <div>Sidebar</div>);
-jest.mock('../../components/ActivityForm', () => () => <div>Form</div>);
-jest.mock('../../components/ProfileForm', () => () => <div>ProfileForm</div>);
+jest.mock('../components/DesktopNavigation', () => () => <div>Nav</div>);
+jest.mock('../components/DesktopSidebar', () => () => <div>Sidebar</div>);
+jest.mock('../components/ActivityForm', () => () => <div>Form</div>);
+jest.mock('../components/ProfileForm', () => () => <div>ProfileForm</div>);
 
 // Important: Mock ProfileHeading so we can see if data reached it
-jest.mock('../../components/ProfileHeading', () => ({ profile }) => (
+jest.mock('../components/ProfileHeading', () => ({ profile }) => (
     <div>Profile: {profile.display_name}</div>
 ));
 

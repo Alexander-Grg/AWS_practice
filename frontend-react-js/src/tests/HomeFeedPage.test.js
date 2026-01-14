@@ -1,12 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import HomeFeedPage from '../HomeFeedPage';
-import { get } from '../../lib/Requests';
-import { checkAuth } from '../../lib/CheckAuth';
+import { get } from '../lib/Requests';
+import { checkAuth } from '../lib/CheckAuth';
 
 // 1. Mock your custom libraries
-jest.mock('../../lib/Requests');
-jest.mock('../../lib/CheckAuth');
+jest.mock('../lib/Requests');
+jest.mock('../lib/CheckAuth');
 
 // 2. Mock child components to simplify the test
 // We only care that the Page passes data to the Feed, not how the Feed renders it.
