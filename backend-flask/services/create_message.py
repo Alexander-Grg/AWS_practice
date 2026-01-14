@@ -4,7 +4,7 @@ from lib.db import db
 from lib.ddb import Ddb
 
 class CreateMessage:
-  # mode indicates if we want to create a new message_group or using an existing one
+  @staticmethod
   def run(mode, message, cognito_user_id, message_group_uuid=None, user_receiver_handle=None):
     model = {
       'errors': None,
