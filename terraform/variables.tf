@@ -34,12 +34,6 @@ variable "ip_range" {
 
 }
 
-variable "is_codespaces" {
-  type        = bool
-  default     = false
-  description = "Set to true if running in GitHub Codespaces environment"
-}
-
 # Lambda function post-confirmation
 variable "function_name_lambda_post_confirmation" {
   description = "Name of the Lambda function"

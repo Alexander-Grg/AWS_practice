@@ -31,6 +31,8 @@ class UpdateProfile:
       'bio': bio,
       'display_name': display_name
     })
+    return handle
+  
   def query_users_short(handle):
     sql = db.template('users','short')
     data = db.query_object_json(sql,{

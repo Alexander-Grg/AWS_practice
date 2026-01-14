@@ -14,7 +14,6 @@ data "aws_ami" "ubuntu" {
 }
 
 data "dotenv" "main" {
-  count    = var.is_codespaces ? 0 : 1  # Only load .env file locally, not in Codespaces
   filename = "../.env"
 }
 
