@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import SigninPage from '../SigninPage';
+import SigninPage from '../pages/SigninPage';
 import { Auth } from 'aws-amplify';
 
 // 1. Mock AWS Amplify

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom'; // Use MemoryRouter for params
-import UserFeedPage from '../UserFeedPage';
+import UserFeedPage from '../pages/UserFeedPage';
 import { checkAuth } from '../lib/CheckAuth';
 
 // Mock Fetch specifically for this file
