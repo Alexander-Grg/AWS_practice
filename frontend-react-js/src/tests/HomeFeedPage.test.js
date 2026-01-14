@@ -10,7 +10,7 @@ jest.mock('../lib/CheckAuth');
 
 // 2. Mock child components to simplify the test
 // We only care that the Page passes data to the Feed, not how the Feed renders it.
-jest.mock('../../components/ActivityFeed', () => {
+jest.mock('../components/ActivityFeed', () => {
   return function DummyFeed({ activities }) {
     return (
       <div data-testid="activity-feed-mock">
@@ -21,10 +21,10 @@ jest.mock('../../components/ActivityFeed', () => {
 });
 
 // Mock other children to avoid errors
-jest.mock('../../components/DesktopNavigation', () => () => <div>Nav</div>);
-jest.mock('../../components/DesktopSidebar', () => () => <div>Sidebar</div>);
-jest.mock('../../components/ActivityForm', () => () => <div>Form</div>);
-jest.mock('../../components/ReplyForm', () => () => <div>Reply</div>);
+jest.mock('../components/DesktopNavigation', () => () => <div>Nav</div>);
+jest.mock('../components/DesktopSidebar', () => () => <div>Sidebar</div>);
+jest.mock('../components/ActivityForm', () => () => <div>Form</div>);
+jest.mock('../components/ReplyForm', () => () => <div>Reply</div>);
 
 describe('HomeFeedPage', () => {
   beforeEach(() => {
