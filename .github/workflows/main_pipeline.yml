@@ -46,7 +46,7 @@ jobs:
 
       - name: Run frontend tests
         run: |
-          docker compose exec -T -e CI=true frontend-react-js npm test -- --watchAll=false
+          docker compose exec -T -e CI=true frontend-react-js npm test -- --transformIgnorePatterns "node_modules/(?!axios)/"
 
       - name: Cleanup
         if: always()
