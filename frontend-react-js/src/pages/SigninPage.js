@@ -62,19 +62,23 @@ export default function SigninPage() {
           <h2>Sign into your Webapp account</h2>
           <div className='fields'>
             <div className='field text_field username'>
-              <label>Email</label>
+              <label htmlFor="email">Email</label>
               <input
+                id="email"
                 type="text"
                 value={email}
-                onChange={email_onchange} 
+                onChange={email_onchange}
+                data-testid="email-input"
               />
             </div>
             <div className='field text_field password'>
-              <label>Password</label>
+              <label htmlFor="password">Password</label>
               <input
+                id="password"
                 type="password"
                 value={password}
-                onChange={password_onchange} 
+                onChange={password_onchange}
+                data-testid="password-input"
               />
             </div>
           </div>
