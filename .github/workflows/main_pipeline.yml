@@ -27,11 +27,11 @@ jobs:
           AWS_SECRET_ACCESS_KEY: "testing"
           AWS_COGNITO_USER_POOL_ID: "us-east-1_xxxx"
           AWS_COGNITO_USER_POOL_CLIENT_ID: "testing"
-          CONNECTION_STRING: "postgresql://postgres:password@db:5432/cruddur"
-          PROD_CONNECTION_STRING: "postgresql://postgres:password@db:5432/cruddur"
+          CONNECTION_STRING: "postgresql://postgres:password@db:5432/webapp"
+          PROD_CONNECTION_STRING: "postgresql://postgres:password@db:5432/webapp"
           FRONTEND_URL: "http://localhost:3000"
           BACKEND_URL: "http://localhost:4567"
-          PG_DATABASE: "cruddur"
+          PG_DATABASE: "webapp"
           PG_PASSWORD: "password"
         run: |
           docker compose up -d --build
@@ -65,7 +65,6 @@ jobs:
       
       TF_VAR_db_password: ${{ secrets.PG_PASSWORD }}
       TF_VAR_allowed_ip: ${{ secrets.ALLOWED_IP }}
-      TF_VAR_ip_range: ${{ secrets.CIDRS }}
 
     steps:
       - uses: actions/checkout@v4

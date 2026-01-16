@@ -210,7 +210,7 @@ resource "aws_cloudwatch_dashboard" "main_dashboard" {
   })
 }
 
-# Custom Metric Filter (example for application logs)
+# Custom Metric Filter
 resource "aws_cloudwatch_log_metric_filter" "error_count" {
   name           = "${var.project_name}-error-count"
   log_group_name = aws_cloudwatch_log_group.webapp_fargate_cluster_managed.name

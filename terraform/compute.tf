@@ -1,13 +1,10 @@
 # Environment detection in locals
 locals {
-  is_codespaces = var.is_codespaces
+  post_confirmation_filename = "post_confirmation.py"
+  messaging_stream_filename  = "messaging_stream.py"
   
-  # File names and handlers for each environment
-  post_confirmation_filename = local.is_codespaces ? "post_confirmation.py" : "lambda_function.py"
-  messaging_stream_filename = local.is_codespaces ? "messaging_stream.py" : "lambda_function.py"
-  
-  post_confirmation_handler = local.is_codespaces ? "post_confirmation.lambda_handler" : "lambda_function.lambda_handler"
-  messaging_stream_handler = local.is_codespaces ? "messaging_stream.lambda_handler" : "lambda_function.lambda_handler"
+  post_confirmation_handler = "post_confirmation.lambda_handler"
+  messaging_stream_handler  = "messaging_stream.lambda_handler"
   
   # Connection string based on environment
   db_connection_string = "postgresql://${aws_db_instance.webapp_rds_instance.username}:${aws_db_instance.webapp_rds_instance.password}@${aws_db_instance.webapp_rds_instance.endpoint}/${aws_db_instance.webapp_rds_instance.db_name}"
@@ -131,9 +128,7 @@ data "archive_file" "webapp_messaging_stream_lambda_zip" {
   output_path = "${path.module}/messaging_stream.zip"
 }
 
-# Conditional psycopg2 layer building - only in Codespaces
 resource "null_resource" "build_psycopg2_layer" {
-  count = local.is_codespaces ? 1 : 0
 
   triggers = {
     requirements = filemd5("${path.module}/layers/psycopg2/requirements.txt")
@@ -153,19 +148,22 @@ resource "null_resource" "build_psycopg2_layer" {
   }
 }
 
-# Archive for psycopg2 layer - УПРОЩЕННАЯ ВЕРСИЯ БЕЗ depends_on
+# Archive for psycopg2 layer
 data "archive_file" "psycopg2_layer_zip" {
   type        = "zip"
   source_dir  = "${path.module}/layers/psycopg2"
   output_path = "${path.module}/layers/psycopg2.zip"
   excludes    = ["requirements.txt"]
+  
+  # Added depends_on to ensure pip install finishes before zipping
+  depends_on = [null_resource.build_psycopg2_layer]
 }
 
 # Lambda Layer for psycopg2
 resource "aws_lambda_layer_version" "psycopg2" {
   filename               = data.archive_file.psycopg2_layer_zip.output_path
   layer_name             = "psycopg2-python312-layer"
-  description            = "Psycopg2 binary for Python 3.12 ${local.is_codespaces ? "(Built for Codespaces)" : "(Built locally)"}"
+  description            = "Psycopg2 binary for Python 3.12 (CI/CD Built)"
   source_code_hash       = data.archive_file.psycopg2_layer_zip.output_base64sha256
   compatible_runtimes    = ["python3.12"]
   compatible_architectures = ["x86_64"]
@@ -228,7 +226,7 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
   tags = {
     Name        = var.function_name_lambda_post_confirmation
     Environment = var.environment
-    EnvironmentType = local.is_codespaces ? "codespaces" : "local"
+    # Removed EnvironmentType tag
   }
 }
 
@@ -284,7 +282,7 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
   tags = {
     Name        = var.function_name_webapp_messaging_stream
     Environment = var.environment
-    EnvironmentType = local.is_codespaces ? "codespaces" : "local"
+    # Removed EnvironmentType tag
   }
 }
 

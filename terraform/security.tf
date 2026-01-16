@@ -1,96 +1,11 @@
-# # Security Group 1: default
-# resource "aws_security_group" "default_sg" {
-#   name        = "webapp-main-sg"
-#   description = "default VPC security group"
-#   vpc_id      = aws_vpc.main.id
-
-#   # Inbound Rules
-#   ingress {
-#     description = "HTTP access"
-#     from_port   = 80
-#     to_port     = 80
-#     protocol    = "tcp"
-#     cidr_blocks = [var.allowed_ip]
-#   }
-
-#   ingress {
-#     description = "PostgreSQL access for the localhost"
-#     from_port   = 5432
-#     to_port     = 5432
-#     protocol    = "tcp"
-#     cidr_blocks = [var.allowed_ip]
-#   }
-
-#   ingress {
-#     description     = "PostgreSQL access for Fargate backend service"
-#     from_port       = 5432
-#     to_port         = 5432
-#     protocol        = "tcp"
-#     security_groups = [aws_security_group.post_srv_sg.id]
-#   }
-
-#   ingress {
-#     description = "SSH access"
-#     from_port   = 22
-#     to_port     = 22
-#     protocol    = "tcp"
-#     cidr_blocks = [var.allowed_ip]
-#   }
-
-#   # ingress {
-#   #   description = "ICMPv6 access"
-#   #   from_port   = -1
-#   #   to_port     = -1
-#   #   protocol    = "icmpv6"
-#   #   cidr_blocks = [var.icmpv6_ip]
-#   # }
-
-#   # Outbound Rules
-#   egress {
-#     description = "All outbound traffic"
-#     from_port   = 0
-#     to_port     = 0
-#     protocol    = "-1"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-
-#   tags = {
-#     Name        = "default"
-#     Environment = "production"
-#     ManagedBy   = "terraform"
-#   }
-# }
-
+# SECURITY GROUPS
 resource "aws_security_group" "ssh_only" {
-  name        = "ssh-only-sg"
-  description = "Allow SSH only from trusted sources"
+  name        = "no-ingress-sg"
+  description = "No Inbound Access - Managed via SSM"
   vpc_id      = aws_vpc.main.id
-  
-  ingress {
-    description = "SSH from current IP"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["${chomp(data.http.current_ip.response_body)}/32"]
-  }
-  
-  ingress {
-    description = "SSH from GitHub Codespaces"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["140.82.112.0/20"]
-  }
-  
-  ingress {
-    description = "SSH from local ISP"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["171.225.184.0/22"]
-  }
-  
+
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -98,18 +13,15 @@ resource "aws_security_group" "ssh_only" {
   }
   
   tags = {
-    Name = "ssh-only-sg"
+    Name = "no-ingress-sg"
   }
 }
 
-
-# Security Group 2: security group for ECS services
 resource "aws_security_group" "post_srv_sg" {
   name        = "post-srv-sg"
   description = "Security group for Webapp services on ECS"
   vpc_id      = aws_vpc.main.id
 
-  # Inbound Rules
   ingress {
     description = "HTTP access"
     from_port   = 80
@@ -118,7 +30,6 @@ resource "aws_security_group" "post_srv_sg" {
     cidr_blocks = [var.allowed_ip]
   }
 
-  # Outbound Rules
   egress {
     description = "All outbound traffic"
     from_port   = 0
@@ -135,7 +46,7 @@ resource "aws_security_group" "post_srv_sg" {
 }
 
 resource "aws_security_group_rule" "ingress_self_reference" {
-  description              = "Allow resources in this SG to talk to each other (Lambda to RDS)"
+  description              = "SG for internal resources intercommunication"
   type                     = "ingress"
   from_port                = 0
   to_port                  = 65535
@@ -144,28 +55,36 @@ resource "aws_security_group_rule" "ingress_self_reference" {
   source_security_group_id = aws_security_group.ssh_only.id
 }
 
-# resource "aws_security_group_rule" "allow_all_egress" {
-#   description       = "Allow all outbound traffic (Needed for Lambda to reach RDS)"
-#   type              = "egress"
-#   from_port         = 0
-#   to_port           = 0
-#   protocol          = "-1"
-#   cidr_blocks       = ["0.0.0.0/0"]
-#   security_group_id = aws_security_group.ssh_only.id
-# }
+# IAM Role for the Session Manager (EC2 access)
+resource "aws_iam_role" "ec2_ssm_role" {
+  name = "ec2-ssm-role"
 
-# Outputs for reference
-output "default_sg_id" {
-  description = "ID of the default security group"
-  value       = aws_security_group.ssh_only.id
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
-output "post_srv_sg_id" {
-  description = "ID of the post-srv-sg security group"
-  value       = aws_security_group.post_srv_sg.id
+resource "aws_iam_role_policy_attachment" "ssm_core_policy" {
+  role       = aws_iam_role.ec2_ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# IAM Role for webapp-post-confirmation Lambda Function
+resource "aws_iam_instance_profile" "ec2_ssm_profile" {
+  name = "ec2-ssm-profile"
+  role = aws_iam_role.ec2_ssm_role.name
+}
+
+# LAMBDA & COGNITO IAM
+
 resource "aws_iam_role" "webapp_post_confirmation_role" {
   name = "webapp-post-confirmation-role"
 
@@ -183,14 +102,11 @@ resource "aws_iam_role" "webapp_post_confirmation_role" {
   })
 }
 
-
-# IAM Policy for VPC access
 resource "aws_iam_role_policy_attachment" "webapp_post_confirmation_vpc_policy" {
   role       = aws_iam_role.webapp_post_confirmation_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
-# IAM Policy for EC2 network interface operations
 resource "aws_iam_policy" "lambda_ec2_policy" {
   name        = "${var.function_name_webapp_messaging_stream}-ec2-policy"
   description = "Policy for Lambda to manage EC2 network interfaces"
@@ -216,7 +132,6 @@ resource "aws_iam_policy" "lambda_ec2_policy" {
   })
 }
 
-# IAM Role for Lambda function
 resource "aws_iam_role" "messaging_stream_lambda_role" {
   name = "${var.function_name_webapp_messaging_stream}-role"
 
@@ -239,7 +154,6 @@ resource "aws_iam_role" "messaging_stream_lambda_role" {
   }
 }
 
-# IAM Role for Lambda function
 resource "aws_iam_role" "post_confirmation_lambda_role" {
   name = "${var.function_name_lambda_post_confirmation}-role"
 
@@ -262,7 +176,6 @@ resource "aws_iam_role" "post_confirmation_lambda_role" {
   }
 }
 
-# IAM Policy for DynamoDB access
 resource "aws_iam_policy" "lambda_dynamodb_policy" {
   name        = "${var.function_name_webapp_messaging_stream}-dynamodb-policy"
   description = "Policy for Lambda to access DynamoDB"
@@ -289,29 +202,25 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
   })
 }
 
-# Attach DynamoDB policy to Lambda role
 resource "aws_iam_role_policy_attachment" "lambda_dynamodb_policy_attachment" {
   role       = aws_iam_role.messaging_stream_lambda_role.name
   policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
 }
 
-# Attach AWS managed policy for basic Lambda execution
 resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   role       = aws_iam_role.messaging_stream_lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Attach AWS managed policy for VPC access
 resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
   role       = aws_iam_role.messaging_stream_lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
-# 1. The User Pool
+# COGNITO
 resource "aws_cognito_user_pool" "main" {
   name = "webapp-user-pool"
 
-  # Allow users to sign in with their email address
   username_attributes = ["email"]
   auto_verified_attributes = ["email"]
 
@@ -351,23 +260,20 @@ resource "aws_cognito_user_pool" "main" {
 resource "aws_cognito_user_pool_client" "client" {
   name = "webapp-app-client"
   user_pool_id = aws_cognito_user_pool.main.id
-
   generate_secret = false
   
-  # CRITICAL for Amplify/Web SDKs
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
     "ALLOW_CUSTOM_AUTH"
   ]
 
-  # OAuth Settings
   supported_identity_providers = ["COGNITO"]
+  
   callback_urls = ["http://localhost:3000/signin"]
   logout_urls   = ["http://localhost:3000/signin"]
 }
 
-# 3. Identity Pool (For swapping JWT tokens for AWS Credentials)
 resource "aws_cognito_identity_pool" "main" {
   identity_pool_name               = "webapp-identity-pool"
   allow_unauthenticated_identities = true
@@ -381,15 +287,12 @@ resource "aws_cognito_identity_pool" "main" {
 
 resource "aws_iam_role" "authenticated" {
   name = "webapp-cognito-authenticated-role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
         Effect = "Allow"
-        Principal = {
-          Federated = "cognito-identity.amazonaws.com"
-        }
+        Principal = { Federated = "cognito-identity.amazonaws.com" }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           "StringEquals" = {
@@ -404,7 +307,6 @@ resource "aws_iam_role" "authenticated" {
   })
 }
 
-# Basic policy for authenticated users
 resource "aws_iam_role_policy" "authenticated_policy" {
   name = "webapp-authenticated-policy"
   role = aws_iam_role.authenticated.id
@@ -433,6 +335,7 @@ resource "aws_cognito_identity_pool_roles_attachment" "main" {
   }
 }
 
+# OUTPUTS
 output "user_pool_id" {
   value = aws_cognito_user_pool.main.id
 }
@@ -441,12 +344,22 @@ output "client_id" {
   value = aws_cognito_user_pool_client.client.id
 }
 
-resource "aws_key_pair" "ansible_key" {
-  key_name   = "ansible-key"
-  public_key = file("~/.ssh/id_Ansible_ssh.pub")
+output "default_sg_id" {
+  description = "ID of the default security group"
+  value       = aws_security_group.ssh_only.id
 }
 
-# SG for the Lambda
+output "post_srv_sg_id" {
+  description = "ID of the post-srv-sg security group"
+  value       = aws_security_group.post_srv_sg.id
+}
+
+output "ssm_instance_profile_name" {
+  description = "Name of the IAM instance profile for SSM"
+  value       = aws_iam_instance_profile.ec2_ssm_profile.name
+}
+
+# LAMBDA SECURITY GROUP (For RDS Access)
 resource "aws_security_group" "lambda_sg" {
   name        = "webapp-lambda-sg"
   description = "Security Group for Lambda to access RDS"
@@ -458,7 +371,6 @@ resource "aws_security_group" "lambda_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
 }
 
 resource "aws_security_group_rule" "rds_ingress_from_lambda" {

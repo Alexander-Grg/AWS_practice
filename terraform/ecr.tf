@@ -35,7 +35,6 @@ resource "aws_ecr_lifecycle_policy" "repo_policy" {
   })
 }
 
-# Output the repository URLs so you can use them in your push script
 output "ecr_repository_urls" {
   value = { for k, v in aws_ecr_repository.app_repos : k => v.repository_url }
 }

@@ -119,12 +119,10 @@ resource "aws_dynamodb_table" "webapp_messages" {
   # Additional Settings
   deletion_protection_enabled = false
 
-  # Point-in-time recovery (currently disabled)
   point_in_time_recovery {
     enabled = false
   }
 
-  # Server-side encryption (currently disabled)
   server_side_encryption {
     enabled = false
   }

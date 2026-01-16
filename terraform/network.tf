@@ -11,7 +11,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -20,7 +19,6 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Subnets
 resource "aws_subnet" "subnet_2a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "172.31.0.0/20"
@@ -54,7 +52,6 @@ resource "aws_subnet" "subnet_2c" {
   }
 }
 
-# Route Table
 resource "aws_route_table" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -68,7 +65,6 @@ resource "aws_route_table" "main" {
   }
 }
 
-# Route Table Associations
 resource "aws_route_table_association" "subnet_2a" {
   subnet_id      = aws_subnet.subnet_2a.id
   route_table_id = aws_route_table.main.id
@@ -84,7 +80,6 @@ resource "aws_route_table_association" "subnet_2c" {
   route_table_id = aws_route_table.main.id
 }
 
-# Create DB Subnet Group
 resource "aws_db_subnet_group" "webapp_db_subnet_group" {
   name       = "webapp-db-subnet-group"
   subnet_ids = [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id]
