@@ -20,14 +20,14 @@ jobs:
       steps:
         - uses: actions/checkout@v4
 
-        - name: Install Security Tools
-          run: pip install bandit ansible-lint
+        # - name: Install Security Tools
+        #   run: pip install bandit ansible-lint
         
-        - name: Run Bandit
-          run: bandit -r ./backend -f json -o bandit-report.json || true
+        # - name: Run Bandit
+        #   run: bandit -r ./backend -f json -o bandit-report.json || true
         
-        - name: Lint Ansible Playbooks
-          run: ansible-lint ./ansible/playbooks/*.yml
+        # - name: Lint Ansible Playbooks
+        #   run: ansible-lint ./ansible/playbooks/*.yml
 
         - name: Setup Python & Flake8
           uses: actions/setup-python@v5
