@@ -24,7 +24,7 @@ jobs:
         #   run: pip install bandit ansible-lint
         
         # - name: Run Bandit
-        #   run: bandit -r ./backend -f json -o bandit-report.json || true
+        #   run: bandit -r ./backend-flask -f json -o bandit-report.json || true
         
         # - name: Lint Ansible Playbooks
         #   run: ansible-lint ./ansible/playbooks/*.yml
@@ -34,7 +34,7 @@ jobs:
           with:
             python-version: '3.12'
         - name: Run Flake8
-          run: pip install flake8 && flake8 ./backend --count --select=E9,F63,F7,F82 --show-source --statistics
+          run: pip install flake8 && flake8 ./backend-flask --count --select=E9,F63,F7,F82 --show-source --statistics
 
   test-app-dev:
     needs: security-and-quality
@@ -97,7 +97,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t app:latest ./backend
+          docker build -t app:latest ./backend-flask
 
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
