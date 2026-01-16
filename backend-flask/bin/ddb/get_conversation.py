@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # docker-compose exec backend-flask python3 -m bin.ddb.get_conversation
+import os
 import boto3
 import sys
 import json
@@ -48,10 +49,10 @@ print(json.dumps(response['ConsumedCapacity'], sort_keys=True, indent=2))
 items = response['Items']
 items.reverse()
 
-for item in reversed_array:
+for item in reversed(items):
   sender_handle = item['user_handle']['S']
   message       = item['message']['S']
   timestamp     = item['sk']['S']
-  dt_object = datetime.datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f%z')
+  dt_object = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f%z')
   formatted_datetime = dt_object.strftime('%Y-%m-%d %I:%M %p')
   print(f'{sender_handle: <12}{formatted_datetime: <22}{message[:40]}...')
