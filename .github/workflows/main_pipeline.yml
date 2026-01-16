@@ -27,7 +27,7 @@ jobs:
           run: bandit -r ./backend -f json -o bandit-report.json || true
         
         - name: Lint Ansible Playbooks
-          run: ansible-lint ./ansible/*.yml
+          run: ansible-lint ./ansible/playbooks/*.yml
 
         - name: Setup Python & Flake8
           uses: actions/setup-python@v5
@@ -157,37 +157,37 @@ jobs:
           ID=$(terraform output -raw instance_id)
           echo "instance_id=$ID" >> $GITHUB_OUTPUT
 
-  configure-and-deploy:
-    needs: [manage-infra, build-and-scan]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: $AWS_REGION
-    steps:
-      - uses: actions/checkout@v4
+  # configure-and-deploy:
+  #   needs: [manage-infra, build-and-scan]
+  #   if: github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #     AWS_DEFAULT_REGION: $AWS_REGION
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Ansible & AWS dependencies
-        run: |
-          pip install ansible boto3 botocore
-          ansible-galaxy collection install community.aws amazon.aws
+  #     - name: Install Ansible & AWS dependencies
+  #       run: |
+  #         pip install ansible boto3 botocore
+  #         ansible-galaxy collection install community.aws amazon.aws
           
-          # Install Session Manager Plugin
-          curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
-          sudo dpkg -i session-manager-plugin.deb
+  #         # Install Session Manager Plugin
+  #         curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+  #         sudo dpkg -i session-manager-plugin.deb
 
-      - name: Create Inventory File
-        run: |
-          INSTANCE_ID="${{ needs.manage-infra.outputs.instance_id }}"
-          echo "[webservers]" > inventory.ini
-          echo "$INSTANCE_ID ansible_connection=community.aws.aws_ssm ansible_aws_ssm_region=${{ env.AWS_REGION }}" >> inventory.ini
-          cat inventory.ini
+  #     - name: Create Inventory File
+  #       run: |
+  #         INSTANCE_ID="${{ needs.manage-infra.outputs.instance_id }}"
+  #         echo "[webservers]" > inventory.ini
+  #         echo "$INSTANCE_ID ansible_connection=community.aws.aws_ssm ansible_aws_ssm_region=${{ env.AWS_REGION }}" >> inventory.ini
+  #         cat inventory.ini
 
-      - name: Run Ansible Playbook
-        run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REGISTRY="$ACCOUNT_ID.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+  #     - name: Run Ansible Playbook
+  #       run: |
+  #         ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+  #         REGISTRY="$ACCOUNT_ID.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
           
-          ansible-playbook -i inventory.ini ./ansible/deploy.yml \
-            --extra-vars "ecr_registry=$REGISTRY backend_repo=${{ env.ECR_BACKEND_REPO }} backend_tag=latest"
+  #         ansible-playbook -i inventory.ini ./ansible/deploy.yml \
+  #           --extra-vars "ecr_registry=$REGISTRY backend_repo=${{ env.ECR_BACKEND_REPO }} backend_tag=latest"
