@@ -21,7 +21,6 @@ resource "aws_db_instance" "webapp_rds_instance" {
   vpc_security_group_ids = [aws_security_group.ssh_only.id]
   db_subnet_group_name   = aws_db_subnet_group.webapp_db_subnet_group.name
   availability_zone      = "ap-southeast-2a"
-  publicly_accessible    = true
   network_type           = "IPV4"
 
   # Backup Configuration

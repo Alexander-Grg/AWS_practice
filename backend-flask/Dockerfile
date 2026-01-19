@@ -1,6 +1,6 @@
 FROM python:3.10-slim-bullseye
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     build-essential \
     libpq-dev \
     curl \
@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /backend-flask
 
 COPY requirements.txt requirements.txt
+RUN pip3 install --upgrade pip setuptools
 RUN pip3 install -r requirements.txt
 
 COPY . .
