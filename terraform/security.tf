@@ -1,27 +1,54 @@
 # SECURITY GROUPS
-resource "aws_security_group" "ssh_only" {
-  name        = "no-ingress-sg"
-  description = "No Inbound Access - Managed via SSM"
+
+# Lambda Security Group
+resource "aws_security_group" "lambda_sg" {
+  name        = "webapp-lambda-sg"
+  description = "Security Group for Lambda functions"
   vpc_id      = aws_vpc.main.id
 
   egress {
-    description = "HTTPS outbound"
+    description = "AWS Services (S3, CloudWatch)"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    prefix_list_ids = [
+      data.aws_prefix_list.s3.id,
+      data.aws_prefix_list.cloudwatch.id,
+    ]
   }
 
   egress {
-    description = "HTTP outbound"
-    from_port   = 80
-    to_port     = 80
+    description = "PostgreSQL to RDS"
+    from_port   = 5432
+    to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [aws_vpc.main.cidr_block]  # Simpler: Allow to VPC
   }
   
   tags = {
-    Name = "no-ingress-sg"
+    Name        = "webapp-lambda-sg"
+    Environment = var.environment
+  }
+}
+
+# RDS Security Group
+resource "aws_security_group" "rds_sg" {
+  name        = "webapp-rds-sg"
+  description = "Security Group for RDS PostgreSQL database"
+  vpc_id      = aws_vpc.main.id
+  
+  ingress {
+    description     = "PostgreSQL from Lambda"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.lambda_sg.id]
+  }
+
+  tags = {
+    Name        = "webapp-rds-sg"
+    Environment = "production"
+    Component   = "rds"
   }
 }
 
@@ -44,7 +71,10 @@ resource "aws_security_group" "post_srv_sg" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    prefix_list_ids = [ 
+    data.aws_prefix_list.s3.id, 
+    data.aws_prefix_list.cloudwatch.id
+    ]
   }
 
   egress {
@@ -60,42 +90,6 @@ resource "aws_security_group" "post_srv_sg" {
     Environment = "production"
     ManagedBy   = "terraform"
   }
-}
-
-# LAMBDA SECURITY GROUP (For RDS Access)
-resource "aws_security_group" "lambda_sg" {
-  name        = "webapp-lambda-sg"
-  description = "Security Group for Lambda to access RDS"
-  vpc_id      = aws_vpc.main.id 
-
-egress {
-    description     = "Allow traffic only to RDS"
-    from_port       = 5432                  
-    to_port         = 5432                   
-    protocol        = "tcp"
-    security_groups = [aws_db_instance.webapp_rds_instance.id]
-    
-  }
-}
-
-resource "aws_security_group_rule" "rds_ingress_from_lambda" {
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  
-  security_group_id        = aws_security_group.ssh_only.id
-  source_security_group_id = aws_security_group.lambda_sg.id
-}
-
-resource "aws_security_group_rule" "ingress_self_reference" {
-  description              = "SG for internal resources intercommunication"
-  type                     = "ingress"
-  from_port                = 0
-  to_port                  = 65535
-  protocol                 = "-1"
-  security_group_id        = aws_security_group.ssh_only.id
-  source_security_group_id = aws_security_group.ssh_only.id
 }
 
 # IAM ROLES
@@ -191,28 +185,6 @@ resource "aws_iam_role" "messaging_stream_lambda_role" {
 
   tags = {
     Name        = "${var.function_name_webapp_messaging_stream}-role"
-    Environment = var.environment
-  }
-}
-
-resource "aws_iam_role" "post_confirmation_lambda_role" {
-  name = "${var.function_name_lambda_post_confirmation}-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = {
-    Name        = "${var.function_name_lambda_post_confirmation}-role"
     Environment = var.environment
   }
 }
@@ -358,11 +330,9 @@ resource "aws_iam_role_policy" "authenticated_policy" {
       {
         Effect = "Allow"
         Action = [
-          "mobileanalytics:PutEvents",
-          "cognito-sync:*",
-          "cognito-identity:*"
+          "mobileanalytics:PutEvents"
         ]
-        Resource = "*"
+        Resource = ["*"]
       }
     ]
   })
@@ -443,11 +413,6 @@ output "client_id" {
   value = aws_cognito_user_pool_client.client.id
 }
 
-output "default_sg_id" {
-  description = "ID of the default security group"
-  value       = aws_security_group.ssh_only.id
-}
-
 output "post_srv_sg_id" {
   description = "ID of the post-srv-sg security group"
   value       = aws_security_group.post_srv_sg.id
@@ -456,4 +421,14 @@ output "post_srv_sg_id" {
 output "ssm_instance_profile_name" {
   description = "Name of the IAM instance profile for SSM"
   value       = aws_iam_instance_profile.ec2_ssm_profile.name
+}
+
+output "lambda_sg_id" {
+  description = "ID of the Lambda security group"
+  value       = aws_security_group.lambda_sg.id
+}
+
+output "rds_sg_id" {
+  description = "ID of the RDS security group"
+  value       = aws_security_group.rds_sg.id
 }

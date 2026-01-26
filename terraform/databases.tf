@@ -14,7 +14,7 @@ resource "aws_db_instance" "webapp_rds_instance" {
   storage_type      = "gp3" 
   storage_encrypted = true
 
-  vpc_security_group_ids = [aws_security_group.post_srv_sg.id]
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
   db_subnet_group_name   = aws_db_subnet_group.webapp_db_subnet_group.name
   
   # backup_retention_period = 7
@@ -51,6 +51,8 @@ output "db_connection_string" {
   value       = "postgresql://root:${var.db_password}@${aws_db_instance.webapp_rds_instance.endpoint}/webapp"
   sensitive   = true
 }
+
+# Dynamo DB table
 
 resource "aws_dynamodb_table" "webapp_messages" {
   name           = "webapp-messages"

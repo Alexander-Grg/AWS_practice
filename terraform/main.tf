@@ -22,3 +22,11 @@ data "http" "current_ip" {
 }
 
 data "aws_caller_identity" "current" {}
+
+data "aws_prefix_list" "s3" {
+  name = "com.amazonaws.ap-southeast-2.s3"
+}
+
+data "aws_prefix_list" "cloudwatch" {
+  name = "com.amazonaws.ap-southeast-2.logs"
+}
