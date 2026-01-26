@@ -1,61 +1,37 @@
 # RDS Database Instance - webapp-rds-instance
 resource "aws_db_instance" "webapp_rds_instance" {
-  # Basic Configuration
   identifier     = "webapp-rds-instance"
   engine         = "postgres"
   engine_version = "17.6"
   instance_class = "db.t3.micro"
 
-  # Database Configuration
   db_name  = "webapp"
   username = "root"
   password = var.db_password
   port     = 5432
 
-  # Storage Configuration
   allocated_storage = 20
-  storage_type      = "gp2"
+  storage_type      = "gp3" 
   storage_encrypted = true
 
-  # Network & Security
-  vpc_security_group_ids = [aws_security_group.ssh_only.id]
+  vpc_security_group_ids = [aws_security_group.post_srv_sg.id]
   db_subnet_group_name   = aws_db_subnet_group.webapp_db_subnet_group.name
-  availability_zone      = "ap-southeast-2a"
-  network_type           = "IPV4"
+  
+  # backup_retention_period = 7
+  # skip_final_snapshot     = false # Don't lose data on delete
+  # deletion_protection     = true  # Prevent accidental deletion
 
-  # Backup Configuration
-  backup_retention_period = 0
-  backup_window           = "16:55-17:25"
-  backup_target           = "region"
-  copy_tags_to_snapshot   = false
-
-  # Maintenance Configuration
-  maintenance_window         = "Sun:14:15-Sun:14:45"
-  auto_minor_version_upgrade = true
-  deletion_protection        = false
-
-  # Parameter and Option Groups
-  parameter_group_name = "default.postgres17"
-  option_group_name    = "default:postgres-17"
-
-  # Monitoring & Performance
-  monitoring_interval                   = 0
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
+  performance_insights_kms_key_id       = aws_kms_key.rds_pi_key.arn
 
-  # Additional Configuration
-  multi_az           = false
-  license_model      = "postgresql-license"
-  ca_cert_identifier = "rds-ca-rsa2048-g1"
-
-  # Authentication
-  iam_database_authentication_enabled = false
-
-  skip_final_snapshot = true
+  # Essential for Postgres health
+  monitoring_interval = 60
+  monitoring_role_arn = aws_iam_role.rds_monitoring_role.arn
 
   tags = {
     Name        = "webapp-rds-instance"
-    Environment = "development"
+    Environment = "production"
   }
 }
 
@@ -76,7 +52,6 @@ output "db_connection_string" {
   sensitive   = true
 }
 
-# DynamoDB Table - webapp-messages
 resource "aws_dynamodb_table" "webapp_messages" {
   name           = "webapp-messages"
   billing_mode   = "PROVISIONED"
@@ -85,7 +60,6 @@ resource "aws_dynamodb_table" "webapp_messages" {
   hash_key       = "pk"
   range_key      = "sk"
 
-  # Attribute Definitions
   attribute {
     name = "pk"
     type = "S"
@@ -101,7 +75,6 @@ resource "aws_dynamodb_table" "webapp_messages" {
     type = "S"
   }
 
-  # Global Secondary Index
   global_secondary_index {
     name            = "message-group-sk-index"
     hash_key        = "message_group_uuid"
@@ -111,19 +84,17 @@ resource "aws_dynamodb_table" "webapp_messages" {
     write_capacity  = 5
   }
 
-  # Stream Configuration
   stream_enabled   = true
   stream_view_type = "NEW_IMAGE"
 
-  # Additional Settings
-  deletion_protection_enabled = false
-
-  point_in_time_recovery {
-    enabled = false
+  server_side_encryption {
+    enabled = true 
   }
 
-  server_side_encryption {
-    enabled = false
+  # deletion_protection_enabled = true
+
+  point_in_time_recovery {
+    enabled = true
   }
 
   tags = {

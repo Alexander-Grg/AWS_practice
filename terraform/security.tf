@@ -5,10 +5,18 @@ resource "aws_security_group" "ssh_only" {
   vpc_id      = aws_vpc.main.id
 
   egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTPS outbound"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "HTTP outbound"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   
@@ -17,6 +25,7 @@ resource "aws_security_group" "ssh_only" {
   }
 }
 
+# SG for an ECS, not using it now, but will be in future.
 resource "aws_security_group" "post_srv_sg" {
   name        = "post-srv-sg"
   description = "Security group for Webapp services on ECS"
@@ -31,11 +40,19 @@ resource "aws_security_group" "post_srv_sg" {
   }
 
   egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "Allow HTTPS (ECR, Logs, AWS APIs)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description     = "Access to RDS"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.rds_sg.id]
   }
 
   tags = {
@@ -43,6 +60,32 @@ resource "aws_security_group" "post_srv_sg" {
     Environment = "production"
     ManagedBy   = "terraform"
   }
+}
+
+# LAMBDA SECURITY GROUP (For RDS Access)
+resource "aws_security_group" "lambda_sg" {
+  name        = "webapp-lambda-sg"
+  description = "Security Group for Lambda to access RDS"
+  vpc_id      = aws_vpc.main.id 
+
+egress {
+    description     = "Allow traffic only to RDS"
+    from_port       = 5432                  
+    to_port         = 5432                   
+    protocol        = "tcp"
+    security_groups = [aws_db_instance.webapp_rds_instance.id]
+    
+  }
+}
+
+resource "aws_security_group_rule" "rds_ingress_from_lambda" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  
+  security_group_id        = aws_security_group.ssh_only.id
+  source_security_group_id = aws_security_group.lambda_sg.id
 }
 
 resource "aws_security_group_rule" "ingress_self_reference" {
@@ -55,7 +98,9 @@ resource "aws_security_group_rule" "ingress_self_reference" {
   source_security_group_id = aws_security_group.ssh_only.id
 }
 
-# IAM Role for the Session Manager (EC2 access)
+# IAM ROLES
+
+#  for the Session Manager (EC2 access)
 resource "aws_iam_role" "ec2_ssm_role" {
   name = "ec2-ssm-role"
 
@@ -71,6 +116,27 @@ resource "aws_iam_role" "ec2_ssm_role" {
       }
     ]
   })
+}
+
+# for the RDS to send metrics to CloudWatch
+resource "aws_iam_role" "rds_monitoring_role" {
+  name = "rds-enhanced-monitoring-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "monitoring.rds.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "rds_monitoring_attachment" {
+  role       = aws_iam_role.rds_monitoring_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
 }
 
 resource "aws_iam_role_policy_attachment" "ssm_core_policy" {
@@ -105,31 +171,6 @@ resource "aws_iam_role" "webapp_post_confirmation_role" {
 resource "aws_iam_role_policy_attachment" "webapp_post_confirmation_vpc_policy" {
   role       = aws_iam_role.webapp_post_confirmation_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
-
-resource "aws_iam_policy" "lambda_ec2_policy" {
-  name        = "${var.function_name_webapp_messaging_stream}-ec2-policy"
-  description = "Policy for Lambda to manage EC2 network interfaces"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:CreateNetworkInterface",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DeleteNetworkInterface",
-          "ec2:AttachNetworkInterface",
-          "ec2:DetachNetworkInterface",
-          "ec2:DescribeInstances",
-          "ec2:AssignPrivateIpAddresses",
-          "ec2:UnassignPrivateIpAddresses"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
 }
 
 resource "aws_iam_role" "messaging_stream_lambda_role" {
@@ -207,14 +248,14 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb_policy_attachment" {
   policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  role       = aws_iam_role.messaging_stream_lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
 resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
   role       = aws_iam_role.messaging_stream_lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "cognito_authenticated" {
+  role       = aws_iam_role.authenticated.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonCognitoPowerUser"
 }
 
 # COGNITO
@@ -335,6 +376,64 @@ resource "aws_cognito_identity_pool_roles_attachment" "main" {
   }
 }
 
+# KMS
+
+# FOR RDS
+resource "aws_kms_key" "rds_pi_key" {
+  description             = "Encryption key for RDS Performance Insights"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "rds-pi-key"
+  }
+}
+
+resource "aws_kms_alias" "rds_pi_key_alias" {
+  name          = "alias/rds-performance-insights"
+  target_key_id = aws_kms_key.rds_pi_key.key_id
+}
+
+# FOR SNS
+resource "aws_kms_key" "sns_encryption_key" {
+  description             = "KMS key for encrypting SNS topics"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  # This policy allows CloudWatch to use the key to send alerts
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudWatch Alarms to use the key"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudwatch.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_kms_alias" "sns_key_alias" {
+  name          = "alias/sns-alerts-key"
+  target_key_id = aws_kms_key.sns_encryption_key.key_id
+}
+
 # OUTPUTS
 output "user_pool_id" {
   value = aws_cognito_user_pool.main.id
@@ -357,28 +456,4 @@ output "post_srv_sg_id" {
 output "ssm_instance_profile_name" {
   description = "Name of the IAM instance profile for SSM"
   value       = aws_iam_instance_profile.ec2_ssm_profile.name
-}
-
-# LAMBDA SECURITY GROUP (For RDS Access)
-resource "aws_security_group" "lambda_sg" {
-  name        = "webapp-lambda-sg"
-  description = "Security Group for Lambda to access RDS"
-  vpc_id      = aws_vpc.main.id 
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_security_group_rule" "rds_ingress_from_lambda" {
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  
-  security_group_id        = aws_security_group.ssh_only.id
-  source_security_group_id = aws_security_group.lambda_sg.id
 }

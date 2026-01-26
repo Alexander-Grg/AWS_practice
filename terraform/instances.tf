@@ -6,6 +6,11 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids = [aws_security_group.ssh_only.id]
   iam_instance_profile = aws_iam_instance_profile.ec2_ssm_profile.name
 
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
+
   tags = {
     Name = "AWS_PRACTICE"
   }

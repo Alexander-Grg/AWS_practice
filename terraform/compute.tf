@@ -169,12 +169,6 @@ resource "aws_lambda_layer_version" "psycopg2" {
   compatible_architectures = ["x86_64"]
 }
 
-# IAM Policy Attachment for Post Confirmation Lambda
-resource "aws_iam_role_policy_attachment" "lambda_ec2_policy_attachment" {
-  role       = aws_iam_role.webapp_post_confirmation_role.name
-  policy_arn = aws_iam_policy.lambda_ec2_policy.arn
-}
-
 # CloudWatch Log Group for Post Confirmation Lambda
 resource "aws_cloudwatch_log_group" "lambda_post_confirmation_logs" {
   name              = "/aws/lambda/${var.function_name_lambda_post_confirmation}"
@@ -236,6 +230,7 @@ resource "aws_lambda_permission" "allow_cognito" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.webapp_post_confirmation.function_name
   principal     = "cognito-idp.amazonaws.com"
+  source_arn = aws_cognito_user_pool.main.arn
 }
 
 # CloudWatch Log Group for Messaging Stream Lambda

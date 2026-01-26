@@ -20,3 +20,5 @@ data "dotenv" "main" {
 data "http" "current_ip" {
   url = "https://ifconfig.me/ip"
 }
+
+data "aws_caller_identity" "current" {}

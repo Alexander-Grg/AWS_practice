@@ -23,7 +23,7 @@ resource "aws_subnet" "subnet_2a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "172.31.0.0/20"
   availability_zone       = "ap-southeast-2a"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "subnet-2a"
@@ -34,7 +34,7 @@ resource "aws_subnet" "subnet_2b" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "172.31.32.0/20"
   availability_zone       = "ap-southeast-2b"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "subnet-2b"
@@ -45,7 +45,7 @@ resource "aws_subnet" "subnet_2c" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "172.31.16.0/20"
   availability_zone       = "ap-southeast-2c"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "subnet-2c"

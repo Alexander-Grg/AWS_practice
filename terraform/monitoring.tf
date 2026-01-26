@@ -1,5 +1,6 @@
 resource "aws_sns_topic" "cloudwatch_alerts" {
   name = "${var.project_name}-cloudwatch-alerts"
+  kms_master_key_id = aws_kms_key.sns_encryption_key.id
 
   tags = {
     Environment = var.environment
