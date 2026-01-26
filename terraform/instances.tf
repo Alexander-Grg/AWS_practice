@@ -3,8 +3,14 @@ resource "aws_instance" "app_server" {
   instance_type = "t3.micro"
   subnet_id     = aws_subnet.subnet_2a.id
  
-  vpc_security_group_ids = [aws_security_group.ssh_only.id]
+  vpc_security_group_ids = [aws_security_group.post_srv_sg.id]
   iam_instance_profile = aws_iam_instance_profile.ec2_ssm_profile.name
+
+   root_block_device {
+    encrypted   = true
+    volume_type = "gp3"
+    volume_size = 8
+  }
 
   metadata_options {
     http_endpoint = "enabled"
@@ -12,7 +18,7 @@ resource "aws_instance" "app_server" {
   }
 
   tags = {
-    Name = "AWS_PRACTICE"
+    Name = "app_server"
   }
 }
 

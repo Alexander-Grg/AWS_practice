@@ -17,9 +17,9 @@ resource "aws_db_instance" "webapp_rds_instance" {
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
   db_subnet_group_name   = aws_db_subnet_group.webapp_db_subnet_group.name
   
-  # backup_retention_period = 7
-  # skip_final_snapshot     = false # Don't lose data on delete
-  # deletion_protection     = true  # Prevent accidental deletion
+  backup_retention_period = 7
+  skip_final_snapshot     = false
+  deletion_protection     = true 
 
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
