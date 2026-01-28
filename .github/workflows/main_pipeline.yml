@@ -85,8 +85,62 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  build-and-scan:
+  create-ecr:
     needs: test-app-dev
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-southeast-2
+      ECR_BACKEND_REPO: backend-flask
+      ECR_FRONTEND_REPO: frontend-react-js
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Create Backend ECR Repository
+        run: |
+          # Check if repo exists, create if not
+          if aws ecr describe-repositories --repository-names ${{ env.ECR_BACKEND_REPO }} > /dev/null 2>&1; then
+            echo "ECR repository ${{ env.ECR_BACKEND_REPO }} already exists"
+          else
+            echo "Creating ECR repository: ${{ env.ECR_BACKEND_REPO }}"
+            aws ecr create-repository \
+              --repository-name ${{ env.ECR_BACKEND_REPO }} \
+              --image-tag-mutability IMMUTABLE \
+              --image-scanning-configuration scanOnPush=true \
+              --encryption-configuration encryptionType=KMS
+            
+            echo "Setting lifecycle policy"
+            aws ecr put-lifecycle-policy \
+              --repository-name ${{ env.ECR_BACKEND_REPO }} \
+              --lifecycle-policy-text '{"rules":[{"rulePriority":1,"description":"Keep last 10 images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},"action":{"type":"expire"}}]}'
+          fi
+      
+      - name: Create Frontend ECR Repository
+        run: |
+          if aws ecr describe-repositories --repository-names ${{ env.ECR_FRONTEND_REPO }} > /dev/null 2>&1; then
+            echo "ECR repository ${{ env.ECR_FRONTEND_REPO }} already exists"
+          else
+            echo "Creating ECR repository: ${{ env.ECR_FRONTEND_REPO }}"
+            aws ecr create-repository \
+              --repository-name ${{ env.ECR_FRONTEND_REPO }} \
+              --image-tag-mutability IMMUTABLE \
+              --image-scanning-configuration scanOnPush=true \
+              --encryption-configuration encryptionType=KMS
+            
+            aws ecr put-lifecycle-policy \
+              --repository-name ${{ env.ECR_FRONTEND_REPO }} \
+              --lifecycle-policy-text '{"rules":[{"rulePriority":1,"description":"Keep last 10 images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},"action":{"type":"expire"}}]}'
+          fi
+
+  build-and-scan:
+    needs: [test-app-dev, create-ecr]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -144,7 +198,7 @@ jobs:
 
       # A. IaC Security Scan (Tfsec)
       - name: Run Tfsec
-        uses: aquasecurity/tfsec-action@v1.4.0
+        uses: aquasecurity/tfsec-action@v1.0.0
         with:
           working_directory: ./terraform
           minumum_severity: MEDIUM
