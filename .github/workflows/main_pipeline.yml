@@ -144,9 +144,12 @@ jobs:
 
       # A. IaC Security Scan (Tfsec)
       - name: Run Tfsec
-        uses: aquasecurity/tfsec-action@v1.0.0
+        uses: aquasecurity/tfsec-action@v1.4.0
         with:
           working_directory: ./terraform
+          minumum_severity: MEDIUM
+          soft_fail: false
+          format: sarif
 
       - name: Terraform Init
         run: terraform init

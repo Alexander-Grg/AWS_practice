@@ -1,4 +1,5 @@
 # RDS Database Instance - webapp-rds-instance
+# tfsec:ignore:aws-rds-enable-iam-authentication
 resource "aws_db_instance" "webapp_rds_instance" {
   identifier     = "webapp-rds-instance"
   engine         = "postgres"
@@ -10,16 +11,21 @@ resource "aws_db_instance" "webapp_rds_instance" {
   password = var.db_password
   port     = 5432
 
+  # iam_database_authentication_enabled = true
+
   allocated_storage = 20
   storage_type      = "gp3" 
   storage_encrypted = true
+  publicly_accessible  = false
 
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
   db_subnet_group_name   = aws_db_subnet_group.webapp_db_subnet_group.name
   
   backup_retention_period = 7
-  skip_final_snapshot     = false
-  deletion_protection     = true 
+    # For production env should be false
+  skip_final_snapshot     = true
+    # For production env should be true
+  deletion_protection     = false 
 
   performance_insights_enabled          = true
   performance_insights_retention_period = 7

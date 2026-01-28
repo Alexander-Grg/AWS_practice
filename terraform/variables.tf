@@ -34,18 +34,18 @@ variable "ip_range" {
 
 }
 
+variable "db_iam_user" {
+  description = "IP that allowed for the AWS security group"
+  type = string
+  sensitive = true
+}
+
 # Lambda function post-confirmation
 variable "function_name_lambda_post_confirmation" {
   description = "Name of the Lambda function"
   type        = string
   default     = "webapp-post-confirmation2"
 }
-
-# variable "prod_connection_string" {
-#   description = "PostgreSQL connection string for production database"
-#   type        = string
-#   sensitive   = true
-# }
 
 variable "psycopg2_layer_arn" {
   description = "ARN of the psycopg2 Lambda layer"
