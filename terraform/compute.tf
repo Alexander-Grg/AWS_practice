@@ -18,7 +18,7 @@ resource "aws_cloudwatch_log_group" "lambda_post_confirmation_logs" {
 
 # Post Confirmation Lambda Function
 resource "aws_lambda_function" "webapp_post_confirmation" {
-  filename         = data.archive_file.lambda_post_confirmation_lambda_zip.output_path
+  filename         = "${path.module}/post_confirmation.zip"
   function_name    = var.function_name_lambda_post_confirmation
   role             = aws_iam_role.webapp_post_confirmation_role.arn
   handler          = local.post_confirmation_handler
@@ -81,7 +81,7 @@ resource "aws_cloudwatch_log_group" "webapp_messaging_stream_logs" {
 
 # Messaging Stream Lambda Function
 resource "aws_lambda_function" "webapp_messaging_stream" {
-  filename         = data.archive_file.webapp_messaging_stream_lambda_zip.output_path
+  filename         = "${path.module}/messaging_stream.zip"
   function_name    = var.function_name_webapp_messaging_stream
   role             = aws_iam_role.messaging_stream_lambda_role.arn
   handler          = local.messaging_stream_handler
