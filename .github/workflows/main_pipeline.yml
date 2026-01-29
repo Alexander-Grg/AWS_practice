@@ -197,10 +197,10 @@ jobs:
           python-version: '3.12'
       
       - name: Make build script executable
-        run: chmod +x ../lambdas/build-lambdas.sh
+        run: chmod +x ../lambdas/build_lambdas.sh
       
       - name: Build Lambda packages
-        run: ../lambdas/build-lambdas.sh
+        run: ../lambdas/build_lambdas.sh
       
       - name: Upload Lambda packages as artifact
         uses: actions/upload-artifact@v4
