@@ -157,9 +157,15 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Generate Tag
+        id: vars
+        run: |
+          # Generate a tag with Date and Short SHA: 20231027-a1b2c3d
+          echo "tag=$(date +%Y%m%d-%H%M)-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
       - name: Build Docker Image
         run: |
-          docker build -t app:latest ./backend-flask
+          docker build -t app:${{ steps.vars.outputs.tag }} ./backend-flask
 
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
@@ -173,8 +179,8 @@ jobs:
       - name: Push to ECR
         run: |
           REGISTRY="${{ steps.login-ecr.outputs.registry }}"
-          docker tag app:latest $REGISTRY/${{ env.ECR_BACKEND_REPO }}:latest
-          docker push $REGISTRY/${{ env.ECR_BACKEND_REPO }}:latest
+          docker tag app:${{ steps.vars.outputs.tag }} $REGISTRY/${{ env.ECR_BACKEND_REPO }}:${{ steps.vars.outputs.tag }}
+          docker push $REGISTRY/${{ env.ECR_BACKEND_REPO }}:${{ steps.vars.outputs.tag }}
 
   manage-infra:
     needs: test-app-dev
@@ -187,7 +193,9 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: $AWS_REGION
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION}}
+
+      TF_VAR_default_region: ${{ secrets.AWS_DEFAULT_REGION}}
       TF_VAR_db_password: ${{ secrets.PG_PASSWORD }}
       TF_VAR_allowed_ip: ${{ secrets.ALLOWED_IP }}
       TF_VAR_admin_ip: "0.0.0.0/0"
