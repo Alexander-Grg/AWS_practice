@@ -182,53 +182,88 @@ jobs:
           docker tag app:${{ steps.vars.outputs.tag }} $REGISTRY/${{ env.ECR_BACKEND_REPO }}:${{ steps.vars.outputs.tag }}
           docker push $REGISTRY/${{ env.ECR_BACKEND_REPO }}:${{ steps.vars.outputs.tag }}
 
-  manage-infra:
+  build-lambda-packages:
     needs: test-app-dev
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./terraform
-    outputs:
-      instance_id: ${{ steps.tf_output.outputs.instance_id }}
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION}}
-
-      TF_VAR_default_region: ${{ secrets.AWS_DEFAULT_REGION}}
-      TF_VAR_db_password: ${{ secrets.PG_PASSWORD }}
-      TF_VAR_allowed_ip: ${{ secrets.ALLOWED_IP }}
-      TF_VAR_admin_ip: "0.0.0.0/0"
-      TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }} 
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-
-      # A. IaC Security Scan (Tfsec)
-      - name: Run Tfsec
-        uses: aquasecurity/tfsec-action@v1.0.0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          working_directory: ./terraform
-          minumum_severity: MEDIUM
-          soft_fail: false
-          format: sarif
+          python-version: '3.12'
+      
+      - name: Make build script executable
+        run: chmod +x build-lambdas.sh
+      
+      - name: Build Lambda packages
+        run: ./build-lambdas.sh
+      
+      - name: Upload Lambda packages as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-packages
+          path: |
+            ./terraform/post_confirmation.zip
+            ./terraform/messaging_stream.zip
 
-      - name: Terraform Init
-        run: terraform init
+  manage-infra:
+      needs: build-lambda-packages
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: ./terraform
+      outputs:
+        instance_id: ${{ steps.tf_output.outputs.instance_id }}
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION}}
 
-      - name: Terraform Plan
-        run: terraform plan -no-color
+        TF_VAR_default_region: ${{ secrets.AWS_DEFAULT_REGION}}
+        TF_VAR_db_password: ${{ secrets.PG_PASSWORD }}
+        TF_VAR_allowed_ip: ${{ secrets.ALLOWED_IP }}
+        TF_VAR_admin_ip: "0.0.0.0/0"
+        TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }} 
+      steps:
+        - uses: actions/checkout@v4
 
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve
+        - name: Download Lambda packages
+          uses: actions/download-artifact@v4
+          with:
+            name: lambda-packages
+            path: ./terraform
 
-      - name: Get Instance ID
-        id: tf_output
-        if: github.ref == 'refs/heads/main'
-        run: |
-          ID=$(terraform output -raw instance_id)
-          echo "instance_id=$ID" >> $GITHUB_OUTPUT
+        - uses: hashicorp/setup-terraform@v3
+
+        # A. IaC Security Scan (Tfsec)
+        - name: Run Tfsec
+          uses: aquasecurity/tfsec-action@v1.0.0
+          with:
+            working_directory: ./terraform
+            minumum_severity: MEDIUM
+            soft_fail: false
+            format: sarif
+
+        - name: Terraform Init
+          run: terraform init
+
+        - name: Terraform Plan
+          run: terraform plan -no-color
+
+        - name: Terraform Apply
+          if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+          run: terraform apply -auto-approve
+
+        - name: Get Instance ID
+          id: tf_output
+          if: github.ref == 'refs/heads/main'
+          run: |
+            ID=$(terraform output -raw instance_id)
+            echo "instance_id=$ID" >> $GITHUB_OUTPUT
 
   # configure-and-deploy:
   #   needs: [manage-infra, build-and-scan]

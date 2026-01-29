@@ -1,172 +1,8 @@
 # Environment detection in locals
 locals {
-  post_confirmation_filename = "post_confirmation.py"
-  messaging_stream_filename  = "messaging_stream.py"
-  
   post_confirmation_handler = "post_confirmation.lambda_handler"
   messaging_stream_handler  = "messaging_stream.lambda_handler"
-  
-  # Connection string based on environment
   db_connection_string = "postgresql://${aws_db_instance.webapp_rds_instance.username}:${aws_db_instance.webapp_rds_instance.password}@${aws_db_instance.webapp_rds_instance.endpoint}/${aws_db_instance.webapp_rds_instance.db_name}"
-}
-
-# Create Lambda function source code
-resource "local_file" "lambda_post_confirmation_source" {
-  filename = "${path.module}/${local.post_confirmation_filename}"
-  content  = <<EOF
-import json
-import psycopg2
-import os
-
-def lambda_handler(event, context):
-    """
-    Cognito Post-Confirmation Lambda
-    Syncs the new user from Cognito into the RDS 'users' table.
-    """
-    print('== Connection starting...')
-    print('FULL EVENT:', event)
-
-    user_attrs = event['request']['userAttributes']
-    
-    user_display_name = user_attrs.get('name', 'No Name')
-    user_email        = user_attrs.get('email')
-    user_cognito_id   = user_attrs.get('sub')
-    user_handle       = user_attrs.get('preferred_username')
-
-    # Guard clause
-    if not user_email or not user_handle:
-        print("ERROR: Missing email or handle in Cognito attributes.")
-        return event
-
-    conn = None # Initialize here to be safe
-    try:
-        print('== Connecting to DB...')
-        # UPDATED: Matches your Terraform variable
-        conn = psycopg2.connect(os.getenv('PROD_CONNECTION_STRING'))
-        cur = conn.cursor()
-        
-        sql = """
-            INSERT INTO public.users (
-                display_name, 
-                email, 
-                handle, 
-                cognito_user_id
-            ) 
-            VALUES(%s, %s, %s, %s)
-            ON CONFLICT (handle) 
-            DO UPDATE SET 
-                cognito_user_id = EXCLUDED.cognito_user_id,
-                email = EXCLUDED.email;
-        """
-        
-        params = [
-            user_display_name,
-            user_email,
-            user_handle,
-            user_cognito_id
-        ]
-        
-        print(f"== Executing SQL for handle: {user_handle}")
-        cur.execute(sql, params)
-        conn.commit()
-        print("== User successfully synced.")
-
-    except (Exception, psycopg2.DatabaseError) as error:
-        print("== Database Error:", error)
-        # We purposely do NOT raise the error here so the user can still sign up
-        # even if the DB sync fails (CloudWatch will alert us).
-        
-    finally:
-        if conn is not None:
-            cur.close()
-            conn.close()
-            print('== Database connection closed.')
-
-    return event
-EOF
-}
-
-# Archive for Post Confirmation Lambda
-data "archive_file" "lambda_post_confirmation_lambda_zip" {
-  type        = "zip"
-  source_file = local_file.lambda_post_confirmation_source.filename
-  output_path = "${path.module}/post_confirmation.zip"
-}
-
-# Create Messaging Stream Lambda source code
-resource "local_file" "webapp_messaging_stream_source" {
-  filename = "${path.module}/${local.messaging_stream_filename}"
-  content  = <<EOF
-import json
-import boto3
-from boto3.dynamodb.conditions import Key, Attr
-
-dynamodb = boto3.resource('dynamodb')
-table_name = 'webapp-messages'
-table = dynamodb.Table(table_name)
-
-def lambda_handler(event, context):
-    print('event:', event)
-    
-    message_group_uuid = event['message_group_uuid']
-    
-    # Query DynamoDB
-    response = table.query(
-        KeyConditionExpression=Key('message_group_uuid').eq(message_group_uuid)
-    )
-    return {
-        'statusCode': 200,
-        'body': json.dumps(response['Items'])
-    }
-EOF
-}
-
-# Archive for Messaging Stream Lambda
-data "archive_file" "webapp_messaging_stream_lambda_zip" {
-  type        = "zip"
-  source_file = local_file.webapp_messaging_stream_source.filename
-  output_path = "${path.module}/messaging_stream.zip"
-}
-
-resource "null_resource" "build_psycopg2_layer" {
-
-  triggers = {
-    requirements = filemd5("${path.module}/layers/psycopg2/requirements.txt")
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-      rm -rf ${path.module}/layers/psycopg2/python
-      mkdir -p ${path.module}/layers/psycopg2/python
-      pip install -r ${path.module}/layers/psycopg2/requirements.txt \
-        -t ${path.module}/layers/psycopg2/python \
-        --platform manylinux2014_x86_64 \
-        --only-binary=:all: \
-        --implementation cp \
-        --python-version 3.12
-    EOT
-  }
-}
-
-# Archive for psycopg2 layer
-data "archive_file" "psycopg2_layer_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/layers/psycopg2"
-  output_path = "${path.module}/layers/psycopg2.zip"
-  excludes    = ["requirements.txt"]
-  
-  # Added depends_on to ensure pip install finishes before zipping
-  depends_on = [null_resource.build_psycopg2_layer]
-}
-
-# Lambda Layer for psycopg2
-resource "aws_lambda_layer_version" "psycopg2" {
-  filename               = data.archive_file.psycopg2_layer_zip.output_path
-  layer_name             = "psycopg2-python312-layer"
-  description            = "Psycopg2 binary for Python 3.12 (CI/CD Built)"
-  source_code_hash       = data.archive_file.psycopg2_layer_zip.output_base64sha256
-  compatible_runtimes    = ["python3.12"]
-  compatible_architectures = ["x86_64"]
 }
 
 # CloudWatch Log Group for Post Confirmation Lambda
@@ -191,7 +27,6 @@ resource "aws_lambda_function" "webapp_post_confirmation" {
   memory_size      = 128
   architectures    = ["x86_64"]
   package_type     = "Zip"
-  layers           = [aws_lambda_layer_version.psycopg2.arn]
 
   environment {
     variables = {
@@ -258,7 +93,7 @@ resource "aws_lambda_function" "webapp_messaging_stream" {
 
   vpc_config {
     subnet_ids         = aws_subnet.subnet_2a.id != null ? [aws_subnet.subnet_2a.id, aws_subnet.subnet_2b.id, aws_subnet.subnet_2c.id] : []
-    security_group_ids = [aws_security_group.ssh_only.id]
+    security_group_ids = [aws_security_group.lambda_sg.id]
   }
 
   ephemeral_storage {
