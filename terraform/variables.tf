@@ -27,13 +27,6 @@ variable "default_region" {
   type = string
 }
 
-variable "ip_range" {
-  description = "A range of codespaces ips"
-  type = string
-  sensitive = true
-
-}
-
 # Lambda function post-confirmation
 variable "function_name_lambda_post_confirmation" {
   description = "Name of the Lambda function"
